@@ -1,0 +1,102 @@
+QUICK_STYLE AI Stylist — Sizing Knowledge Base
+================================================
+
+This reference document helps the AI Stylist Concierge calibrate garment sizes
+across popular international brands and local boutique sizing systems.
+
+─────────────────────────────────────────────
+BRAND → BOUTIQUE SIZE CONVERSION CHART
+─────────────────────────────────────────────
+
+Zara (EU) → QUICK_STYLE Local Boutiques:
+  XS (EU 32) → Local Size XS
+  S  (EU 34) → Local Size S
+  M  (EU 36) → Local Size M / L (depends on garment type)
+  L  (EU 38) → Local Size L / XL
+  XL (EU 40) → Local Size XL / XXL
+
+H&M → QUICK_STYLE Local Boutiques:
+  H&M S  → Local Size M (H&M runs small)
+  H&M M  → Local Size M/L
+  H&M L  → Local Size L/XL
+  H&M XL → Local Size XL/XXL
+
+Uniqlo → QUICK_STYLE Local Boutiques:
+  Uniqlo XS → Local Size XS/S
+  Uniqlo S  → Local Size S/M
+  Uniqlo M  → Local Size M (Uniqlo fits true-to-size)
+  Uniqlo L  → Local Size L
+  Uniqlo XL → Local Size L/XL
+
+─────────────────────────────────────────────
+BODY MEASUREMENT GUIDE (cm)
+─────────────────────────────────────────────
+
+Size XS: Chest 80–84  | Waist 62–66  | Hip 87–90
+Size S:  Chest 84–88  | Waist 66–70  | Hip 90–94
+Size M:  Chest 88–94  | Waist 70–76  | Hip 94–100
+Size L:  Chest 94–100 | Waist 76–82  | Hip 100–106
+Size XL: Chest 100–108| Waist 82–90  | Hip 106–114
+Size XXL:Chest 108–116| Waist 90–98  | Hip 114–122
+
+─────────────────────────────────────────────
+GARMENT-SPECIFIC FIT NOTES
+─────────────────────────────────────────────
+
+HOODIES & SWEATSHIRTS:
+  - Generally size up for an oversized/streetwear fit
+  - True-to-size for athletic/structured look
+  - Sleeve length tends to run long in local boutiques
+
+FORMAL SHIRTS & BLAZERS:
+  - Size matching is critical — never compromise on shoulder seam alignment
+  - Chest circumference is the primary measurement for blazers
+  - In local boutiques, L formal shirts often fit like M in international brands
+
+KNIT SWEATERS:
+  - Size up by one if wearing layers underneath
+  - Merino/wool blends may shrink 5–10% on first wash
+  - Shoulder drop is key for comfort
+
+ACTIVEWEAR / TEES:
+  - Local boutique activewear runs 1–2 sizes smaller than international brands
+  - Always size up for activewear tops if between sizes
+
+─────────────────────────────────────────────
+FIT ACCURACY SCORING METHODOLOGY
+─────────────────────────────────────────────
+
+QUICK_STYLE's AI assigns a True Fit Score (0–100%) to each garment based on:
+
+1. Brand-to-brand size conversion confidence (35% weight)
+2. Garment category norms (25% weight)
+3. Fabric composition elasticity factor (20% weight)
+4. Customer return rate for that specific garment (20% weight)
+
+Scores above 90% = Highly reliable fit prediction
+Scores 75–90%    = Good match, minor adjustments may be needed
+Scores below 75% = Recommend consulting size guide or trying in store
+
+─────────────────────────────────────────────
+QUICK_STYLE LOCAL BOUTIQUE PROFILES
+─────────────────────────────────────────────
+
+Boutique A (0.8 km from NIT Jamshedpur):
+  Speciality: Streetwear, Premium Formals
+  Stock refresh: Daily at 9 AM and 3 PM
+  Known for: Oversized fits, quality denim
+
+Boutique B (1.2 km):
+  Speciality: Techwear, Utility wear
+  Stock refresh: Every morning
+  Known for: International brand alternatives, export quality
+
+Boutique C (0.5 km):
+  Speciality: Loungewear, Knitwear
+  Stock refresh: Bi-weekly
+  Known for: Premium texture, European-inspired silhouettes
+
+Boutique D (1.9 km):
+  Speciality: Activewear, Sport
+  Stock refresh: Daily
+  Known for: Performance fabrics, true-to-size cuts

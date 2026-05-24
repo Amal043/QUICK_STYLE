@@ -1,0 +1,46 @@
+# ─── Node / Frontend ───────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── Python / Backend ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+env/
+venv/
+*.egg-info/
+.eggs/
+build/
+
+# ─── Environment / Secrets ─────────────────────────────────────────
+.env
+.env.local
+.env.production
+.env*.local
+
+# ─── Docker ────────────────────────────────────────────────────────
+# (docker-compose.yml IS committed — only ignore local overrides)
+docker-compose.override.yml
+
+# ─── Editor ────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+
+# ─── Logs ──────────────────────────────────────────────────────────
+logs/
+*.log
