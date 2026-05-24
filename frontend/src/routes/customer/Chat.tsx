@@ -32,27 +32,28 @@ export default function Chat() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSelectAndAddToCart = (productId: number, size: Size) => {
-    setSize(productId, size);
-    // Add to cart with delay
-    setTimeout(() => {
-      // Find item catalog metrics
-      let price = 79.00;
-      let name = "Apex Tech Hoodie";
-      let boutique = "Boutique A";
-      if (productId === 2) { name = "Vanguard Utility Jacket"; price = 149.00; boutique = "Boutique B"; }
-      if (productId === 3) { name = "Amethyst Knit Sweater"; price = 95.00; boutique = "Boutique C"; }
-      if (productId === 4) { name = "Aero-Knit Activewear Tee"; price = 45.00; boutique = "Boutique D"; }
+  const mapImage = (name: string): string => {
+    const n = name.toLowerCase();
+    if (n.includes("hoodie")) return "/src/assets/lavender_hoodie.png";
+    if (n.includes("jacket")) return "/src/assets/techwear_jacket.png";
+    if (n.includes("sweater")) return "/src/assets/knit_sweater.png";
+    if (n.includes("tee") || n.includes("shirt")) return "/src/assets/activewear_shirt.png";
+    if (n.includes("blazer")) return "/src/assets/techwear_jacket.png";
+    return "/src/assets/lavender_hoodie.png";
+  };
 
+  const handleSelectAndAddToCart = (recProduct: any, size: Size) => {
+    setSize(recProduct.id, size);
+    setTimeout(() => {
       addToCart({
-        id: productId,
-        name,
-        price,
-        image: '',
-        category: '',
-        boutique,
+        id: recProduct.id,
+        name: recProduct.name,
+        price: recProduct.price,
+        image: mapImage(recProduct.name),
+        category: recProduct.name.includes("Knit") ? 'Loungewear' : recProduct.name.includes("Tee") ? 'Activewear' : recProduct.name.includes("Blazer") ? 'Formals' : 'Streetwear',
+        boutique: recProduct.boutique,
         distance: 1.0,
-        fitAccuracy: 95,
+        fitAccuracy: recProduct.fit_accuracy,
         stock: 5,
         rating: 4.8,
         reviewsCount: 120,
@@ -61,7 +62,7 @@ export default function Chat() {
     }, 100);
   };
 
-  const appendUserMessage = (text: string) => {
+  const appendUserMessage = async (text: string) => {
     const userMsg: Message = {
       id: Math.random().toString(),
       sender: 'user',
@@ -71,61 +72,60 @@ export default function Chat() {
     setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
-    // Simulate backend bot thinking delay
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/v1/chat/message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: 'demo-session',
+          message: text,
+          location: currentLocation || 'NIT Jamshedpur Campus'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Chat API returned an error');
+      }
+      
+      const data = await response.json();
       setIsTyping(false);
-      let replyText = "";
-      let actionNode: React.ReactNode = null;
 
-      const normalized = text.toLowerCase();
-      if (normalized.includes("coffee") || normalized.includes("spilled") || normalized.includes("l shirt")) {
-        replyText = "Oh no! Spilled coffee is the worst. Don't worry, we can get you sorted in minutes.<br><br>I highly recommend the <b>Apex Tech Hoodie (Lavender Edition)</b> in size <b>L</b>. It's stocked right at Boutique A (only 0.8 km away). Our cross-brand calibration gives it a <b>94% True Fit match</b> for Zara Size M profiles.";
-        actionNode = (
-          <button
-            onClick={() => handleSelectAndAddToCart(1, 'L')}
-            className="mt-2.5 px-4 py-2.5 rounded-full bg-white hover:bg-gray-100 text-gray-950 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 active:scale-95 shadow-md transition-all border border-panelBorder cursor-pointer"
-          >
-            <Zap className="w-3.5 h-3.5 fill-[#5C1324] text-[#5C1324]" />
-            <span>Select Size L & Add To Bag</span>
-          </button>
-        );
-      } else if (normalized.includes("formal") || normalized.includes("presentation")) {
-        replyText = "A presentation needs a polished, confident look. Let's get you set up.<br><br>I suggest the premium <b>Vanguard Techwear Utility Jacket</b> which offers structured design detailing, or the elegant <b>Amethyst Knit Sweater</b>. Both pair perfectly with formal trousers. The knit sweater has a <b>96% True Fit score</b> and only 1 remains in local stock!";
-        actionNode = (
-          <div className="flex flex-wrap gap-2 mt-2">
+      let actionNode: React.ReactNode = null;
+      if (data.product_recommendations && data.product_recommendations.length > 0) {
+        if (data.product_recommendations.length === 1) {
+          const rec = data.product_recommendations[0];
+          actionNode = (
             <button
-              onClick={() => handleSelectAndAddToCart(3, 'M')}
-              className="px-4 py-2 rounded-full bg-[#5C1324] hover:bg-[#430E1A] text-white text-[10px] font-bold active:scale-95 transition-all cursor-pointer"
+              onClick={() => handleSelectAndAddToCart(rec, rec.suggested_size as Size)}
+              className="mt-2.5 px-4 py-2.5 rounded-full bg-white hover:bg-gray-100 text-gray-950 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 active:scale-95 shadow-md transition-all border border-panelBorder cursor-pointer"
             >
-              Add Knit Sweater (M)
+              <Zap className="w-3.5 h-3.5 fill-[#5C1324] text-[#5C1324]" />
+              <span>Select Size {rec.suggested_size} & Add To Bag</span>
             </button>
-            <button
-              onClick={() => handleSelectAndAddToCart(2, 'L')}
-              className="px-4 py-2 rounded-full bg-white hover:bg-gray-100 text-gray-950 text-[10px] font-bold active:scale-95 transition-all border border-panelBorder cursor-pointer"
-            >
-              Add Tech Jacket (L)
-            </button>
-          </div>
-        );
-      } else if (normalized.includes("sneaker") || normalized.includes("jeans")) {
-        replyText = "Classic look! Muted denim pairs beautifully with lavender and pastel hues.<br><br>Go for the <b>Apex Tech Hoodie (Lavender Edition)</b> to complete the streetwear aesthetic. It is available right now for instant dispatch from Boutique A.";
-        actionNode = (
-          <button
-            onClick={() => handleSelectAndAddToCart(1, 'M')}
-            className="mt-2 px-4 py-2.5 rounded-full bg-white hover:bg-gray-100 text-gray-950 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 active:scale-95 shadow-md transition-all border border-panelBorder cursor-pointer"
-          >
-            <Zap className="w-3.5 h-3.5 fill-[#5C1324] text-[#5C1324]" />
-            <span>Add Hoodie in size M</span>
-          </button>
-        );
-      } else {
-        replyText = `Interesting styling query! Based on your location near <b>${currentLocation}</b>, I am browsing local boutiques.<br><br>For a tailored recommendation, check out the <b>Amethyst Knit Sweater</b> (0.5 km away) for cozy elegance, or the <b>Aero-Knit Activewear Tee</b> (1.9 km away) in Electric Coral if you need something lightweight. Let me know what styles catch your eye!`;
+          );
+        } else {
+          actionNode = (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {data.product_recommendations.map((rec: any) => (
+                <button
+                  key={rec.id}
+                  onClick={() => handleSelectAndAddToCart(rec, rec.suggested_size as Size)}
+                  className="px-4 py-2 rounded-full bg-[#5C1324] hover:bg-[#430E1A] text-white text-[10px] font-bold active:scale-95 transition-all cursor-pointer"
+                >
+                  Add {rec.name} ({rec.suggested_size})
+                </button>
+              ))}
+            </div>
+          );
+        }
       }
 
       const botMsg: Message = {
         id: Math.random().toString(),
         sender: 'bot',
-        text: replyText,
+        text: data.reply.replace(/\n/g, '<br>'),
         timestamp: new Date()
       };
       
@@ -134,7 +134,16 @@ export default function Chat() {
       }
 
       setMessages((prev) => [...prev, botMsg]);
-    }, 1200);
+    } catch (err) {
+      console.error(err);
+      setIsTyping(false);
+      setMessages((prev) => [...prev, {
+        id: Math.random().toString(),
+        sender: 'bot',
+        text: "I'm sorry, I encountered an issue connecting to the styling engine. Please check if the backend server is running.",
+        timestamp: new Date()
+      }]);
+    }
   };
 
   // Listen to custom voice query event from Header component

@@ -44,51 +44,61 @@ export default function OrderStatus() {
   const startCoords = getBoutiqueCoords();
   const endCoords = locations.jamshedpur;
 
-  // Calculate live scooter position coordinates
-  const courierLat = startCoords.lat + (endCoords.lat - startCoords.lat) * (progress / 100);
-  const courierLng = startCoords.lng + (endCoords.lng - startCoords.lng) * (progress / 100);
+  const [courierPos, setCourierPos] = useState({ lat: startCoords.lat, lng: startCoords.lng });
+
+  // Update initial courier location when boutique changes
+  useEffect(() => {
+    setCourierPos({ lat: startCoords.lat, lng: startCoords.lng });
+  }, [originHub]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id') || 'demo-order';
+
     setProgress(0);
     setActiveStep(1);
     setEta(12);
     setStatusMessage("🤖 AI Stylist calibrating stock and fit sizing patterns...");
 
-    let timerId: any = null;
-    let t2Id: any = null;
+    // WebSocket live coordinate receiver
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/tracking/${orderId}`;
+    const ws = new WebSocket(wsUrl);
 
-    const t1 = setTimeout(() => {
-      setProgress(33);
-      setActiveStep(2);
-      setEta(10);
-      setStatusMessage("🛍️ Boutique is packing your verified garments in magnetic seal-boxes...");
+    ws.onopen = () => {
+      console.log('Live tracking socket connected');
+    };
 
-      t2Id = setTimeout(() => {
-        setProgress(66);
-        setActiveStep(3);
-        setStatusMessage("🏍️ Local Courier dispatched! On route with premium electric scooter...");
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setProgress(data.progress);
+        setEta(data.eta_minutes);
+        setStatusMessage(data.status);
+        setCourierPos({ lat: data.lat, lng: data.lng });
 
-        timerId = setInterval(() => {
-          setEta((prev) => {
-            if (prev <= 1) {
-              clearInterval(timerId);
-              setProgress(100);
-              setStatusMessage("🏍️ Courier arrived at NIT Jamshedpur Main Gate!");
-              return 0;
-            }
-            setProgress((p) => Math.min(99, p + (100 - p) * 0.15));
-            return prev - 1;
-          });
-        }, 3000);
+        if (data.progress < 33) {
+          setActiveStep(1);
+        } else if (data.progress < 66) {
+          setActiveStep(2);
+        } else {
+          setActiveStep(3);
+        }
+      } catch (err) {
+        console.error('Failed to parse WebSocket message', err);
+      }
+    };
 
-      }, 3000);
+    ws.onerror = (err) => {
+      console.error('WebSocket connection error:', err);
+    };
 
-    }, 3000);
+    ws.onclose = () => {
+      console.log('Live tracking socket closed');
+    };
 
     return () => {
-      clearTimeout(t1);
-      if (t2Id) clearTimeout(t2Id);
-      if (timerId) clearInterval(timerId);
+      ws.close();
     };
   }, [originHub]);
 
@@ -243,7 +253,7 @@ export default function OrderStatus() {
             {/* Moving Courier Rider Marker */}
             {progress > 33 && (
               <Marker
-                position={{ lat: courierLat, lng: courierLng }}
+                position={courierPos}
                 title="Courier Scooter Rider"
                 icon={{
                   path: "M -5,-5 L 5,-5 L 5,5 L -5,5 Z",

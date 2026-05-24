@@ -1,71 +1,37 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Product } from '../types';
 
-const initialProducts: Product[] = [
-  {
-    id: 1,
-    name: "Apex Tech Hoodie",
-    price: 79.00,
-    image: "lavender_hoodie.png",
-    category: "Streetwear",
-    boutique: "Boutique A",
-    distance: 0.8,
-    fitAccuracy: 94,
-    stock: 2,
-    rating: 4.8,
-    reviewsCount: 128,
-    description: "Heavyweight drop-shoulder street hoodie in pastel lavender color."
-  },
-  {
-    id: 2,
-    name: "Vanguard Utility Jacket",
-    price: 149.00,
-    image: "techwear_jacket.png",
-    category: "Streetwear",
-    boutique: "Boutique B",
-    distance: 1.2,
-    fitAccuracy: 91,
-    stock: 3,
-    rating: 4.7,
-    reviewsCount: 92,
-    description: "Waterproof obsidian-black cargo utility techwear jacket."
-  },
-  {
-    id: 3,
-    name: "Amethyst Knit Sweater",
-    price: 95.00,
-    image: "knit_sweater.png",
-    category: "Formals",
-    boutique: "Boutique C",
-    distance: 0.5,
-    fitAccuracy: 96,
-    stock: 1,
-    rating: 4.9,
-    reviewsCount: 114,
-    description: "Luxury minimalist cream/lavender wool knit sweater."
-  },
-  {
-    id: 4,
-    name: "Aero-Knit Activewear Tee",
-    price: 45.00,
-    image: "activewear_shirt.png",
-    category: "Activewear",
-    boutique: "Boutique D",
-    distance: 1.9,
-    fitAccuracy: 89,
-    stock: 8,
-    rating: 4.5,
-    reviewsCount: 67,
-    description: "Contrasting seam stitch active tee in electric coral."
-  }
-];
+const mapImage = (name: string): string => {
+  const n = name.toLowerCase();
+  if (n.includes("hoodie")) return "/src/assets/lavender_hoodie.png";
+  if (n.includes("jacket")) return "/src/assets/techwear_jacket.png";
+  if (n.includes("sweater")) return "/src/assets/knit_sweater.png";
+  if (n.includes("tee") || n.includes("shirt")) return "/src/assets/activewear_shirt.png";
+  if (n.includes("blazer")) return "/src/assets/techwear_jacket.png";
+  return "/src/assets/lavender_hoodie.png";
+};
 
 const fetchProducts = async (): Promise<Product[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(initialProducts);
-    }, 450);
-  });
+  const response = await fetch('/api/v1/products');
+  if (!response.ok) {
+    throw new Error('Failed to fetch products');
+  }
+  const data = await response.json();
+  
+  return data.map((p: any) => ({
+    id: p.id,
+    name: p.name,
+    price: p.price?.selling_price ?? 0,
+    image: mapImage(p.name),
+    category: p.category as any,
+    boutique: p.store_name,
+    distance: p.name.includes("Hoodie") ? 0.8 : p.name.includes("Jacket") ? 1.2 : p.name.includes("Sweater") ? 0.5 : p.name.includes("Blazer") ? 0.8 : 1.9,
+    fitAccuracy: p.fit_confidence_avg ?? 95,
+    stock: p.stock ? Object.values(p.stock).reduce((sum: number, qty: any) => sum + (Number(qty) || 0), 0) : 0,
+    description: p.description ?? "",
+    rating: p.rating?.average ?? 4.5,
+    reviewsCount: p.rating?.count ?? 10,
+  }));
 };
 
 export const useProducts = () => {

@@ -3,7 +3,7 @@ import type { CartItem, Product, Size } from '../types';
 
 interface AppState {
   cart: CartItem[];
-  selectedSizes: { [productId: number]: Size };
+  selectedSizes: { [productId: string]: Size };
   currentLocation: string;
   activeCategory: 'All' | 'Streetwear' | 'Formals' | 'Activewear' | 'Loungewear';
   sizingProduct: Product | null;
@@ -17,10 +17,10 @@ interface AppState {
   
   // Actions
   addToCart: (product: Product, size: Size) => void;
-  updateQty: (productId: number, size: Size, delta: number) => void;
-  removeItem: (productId: number, size: Size) => void;
+  updateQty: (productId: string | number, size: Size, delta: number) => void;
+  removeItem: (productId: string | number, size: Size) => void;
   clearCart: () => void;
-  setSize: (productId: number, size: Size) => void;
+  setSize: (productId: string | number, size: Size) => void;
   setLocation: (loc: string) => void;
   setCategory: (cat: 'All' | 'Streetwear' | 'Formals' | 'Activewear' | 'Loungewear') => void;
   setSizingProduct: (prod: Product | null) => void;

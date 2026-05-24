@@ -48,7 +48,7 @@ async def tracking_websocket(websocket: WebSocket, order_id: str):
     Sends JSON payloads: { lat, lng, status, eta_minutes, progress }
     """
     await websocket.accept()
-    print(f"🛵 Tracking WS opened for order: {order_id}")
+    print(f"[TRACKING] Tracking WS opened for order: {order_id}")
 
     total_steps = len(ROUTE_WAYPOINTS) - 1
     steps_per_segment = 5  # Sub-steps between waypoints
@@ -71,12 +71,12 @@ async def tracking_websocket(websocket: WebSocket, order_id: str):
                 eta_minutes = max(1, round((1 - progress) * 12))
 
                 payload = {
-                    "order_id": order_id,
-                    "lat": round(pos["lat"], 6),
-                    "lng": round(pos["lng"], 6),
-                    "status": STATUSES[status_idx],
-                    "eta_minutes": eta_minutes,
-                    "progress": round(progress * 100),
+                     "order_id": order_id,
+                     "lat": round(pos["lat"], 6),
+                     "lng": round(pos["lng"], 6),
+                     "status": STATUSES[status_idx],
+                     "eta_minutes": eta_minutes,
+                     "progress": round(progress * 100),
                 }
 
                 await websocket.send_text(json.dumps(payload))
@@ -88,10 +88,10 @@ async def tracking_websocket(websocket: WebSocket, order_id: str):
             "order_id": order_id,
             "lat": ROUTE_WAYPOINTS[-1]["lat"],
             "lng": ROUTE_WAYPOINTS[-1]["lng"],
-            "status": "Delivered! ✅",
+            "status": "Delivered!",
             "eta_minutes": 0,
             "progress": 100,
         }))
 
     except WebSocketDisconnect:
-        print(f"📵 Tracking WS disconnected: {order_id}")
+        print(f"[TRACKING] Tracking WS disconnected: {order_id}")

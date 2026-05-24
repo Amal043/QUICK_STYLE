@@ -1,0 +1,1 @@
+"""Negotiation Event Data Model"""

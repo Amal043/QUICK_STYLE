@@ -1,0 +1,1 @@
+"""Hyperlocal Trends API Endpoint"""

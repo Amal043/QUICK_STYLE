@@ -3,7 +3,7 @@
 export type Size = 'S' | 'M' | 'L' | 'XL';
 
 export interface Product {
-  id: number;
+  id: string | number;
   name: string;
   price: number;
   image: string;
