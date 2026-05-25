@@ -10,22 +10,21 @@ import activewearShirt from '../assets/activewear_shirt.png';
 
 interface MarketplaceGridProps {
   products: Product[];
-  selectedSizes: { [productId: number]: Size };
-  onSelectSize: (productId: number, size: Size) => void;
+  selectedSizes: { [productId: string]: Size };
+  onSelectSize: (productId: string | number, size: Size) => void;
   onAddToCart: (product: Product) => void;
   onOpenSizingGuide: (product: Product) => void;
   onOpen360Viewer: (product: Product) => void;
 }
 
 // Map product ID to imported images
-export const getImageAsset = (id: number): string => {
-  switch (id) {
-    case 1: return lavenderHoodie;
-    case 2: return techwearJacket;
-    case 3: return knitSweater;
-    case 4: return activewearShirt;
-    default: return '';
-  }
+export const getImageAsset = (id: string | number): string => {
+  const s = String(id).toLowerCase();
+  if (s === '1' || s.includes('hoodie')) return lavenderHoodie;
+  if (s === '2' || s.includes('jacket')) return techwearJacket;
+  if (s === '3' || s.includes('sweater')) return knitSweater;
+  if (s === '4' || s.includes('shirt') || s.includes('tee')) return activewearShirt;
+  return lavenderHoodie;
 };
 
 export const MarketplaceGrid: React.FC<MarketplaceGridProps> = ({

@@ -7,8 +7,8 @@ interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   cartItems: CartItem[];
-  onUpdateQty: (productId: number, size: Size, delta: number) => void;
-  onRemoveItem: (productId: number, size: Size) => void;
+  onUpdateQty: (productId: string | number, size: Size, delta: number) => void;
+  onRemoveItem: (productId: string | number, size: Size) => void;
   onPlaceOrder: (couponApplied: boolean, couponDiscount: number) => void;
 }
 

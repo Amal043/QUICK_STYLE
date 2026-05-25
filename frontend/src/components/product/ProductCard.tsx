@@ -11,20 +11,19 @@ import activewearShirt from '../../assets/activewear_shirt.png';
 interface ProductCardProps {
   product: Product;
   selectedSize: Size | undefined;
-  onSelectSize: (productId: number, size: Size) => void;
+  onSelectSize: (productId: string | number, size: Size) => void;
   onAddToCart: (product: Product) => void;
   onOpenSizingGuide: (product: Product) => void;
   onOpen360Viewer: (product: Product) => void;
 }
 
-export const getImageAsset = (id: number): string => {
-  switch (id) {
-    case 1: return lavenderHoodie;
-    case 2: return techwearJacket;
-    case 3: return knitSweater;
-    case 4: return activewearShirt;
-    default: return '';
-  }
+export const getImageAsset = (id: string | number): string => {
+  const s = String(id).toLowerCase();
+  if (s === '1' || s.includes('hoodie')) return lavenderHoodie;
+  if (s === '2' || s.includes('jacket')) return techwearJacket;
+  if (s === '3' || s.includes('sweater')) return knitSweater;
+  if (s === '4' || s.includes('shirt') || s.includes('tee')) return activewearShirt;
+  return lavenderHoodie;
 };
 
 export const ProductCard: React.FC<ProductCardProps> = ({
