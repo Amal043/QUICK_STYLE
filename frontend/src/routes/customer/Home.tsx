@@ -3,15 +3,33 @@ import { useStore } from '../../store/useStore';
 import { useProducts } from '../../queries/useProducts';
 import { TrendingBanner } from '../../components/product/TrendingBanner';
 import { CategoryTabs } from '../../components/CategoryTabs';
-import { ProductCard } from '../../components/product/ProductCard';
+import { ProductCard, getImageAsset } from '../../components/product/ProductCard';
 import type { Product, Size } from '../../types';
-import { ArrowRight, Box, ShieldCheck, Bike, Zap } from 'lucide-react';
+import { ArrowRight, Box, ShieldCheck, Bike, Zap, MapPin } from 'lucide-react';
 import purpleModel from '../../assets/purple_fur_model.png';
 
 interface HomeProps {
   onOpenSizingGuide: (product: Product) => void;
   onOpen360Viewer: (product: Product) => void;
 }
+
+const CountdownTimer: React.FC = () => {
+  const [seconds, setSeconds] = useState(719); // 11 mins 59 secs
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSeconds((prev) => (prev > 0 ? prev - 1 : 719));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return (
+    <span className="flex items-center gap-1 text-[9px] font-extrabold tracking-wide px-2 py-1 rounded bg-[#5C1324] text-white shadow-md">
+      <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+      <span>⚡ FAST SELLING · {mins}:{secs < 10 ? `0${secs}` : secs}</span>
+    </span>
+  );
+};
 
 export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) {
   const {
@@ -51,100 +69,113 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
     : products.filter(p => p.category === activeCategory);
 
   return (
-    <div className="space-y-12 animate-fade-in">
-      {/* Promo swipe banners */}
+    <div className="space-y-0 py-0 animate-fade-in">
+      
+      {/* 1. Sticky Navigation: Circular Categories horizontal row */}
+      <section className="sticky top-[80px] z-30 bg-[#FAF9F6]/90 backdrop-blur-md border-b border-panelBorder/30 py-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-all duration-300">
+        <CategoryTabs
+          activeCategory={activeCategory}
+          onSelectCategory={setCategory}
+        />
+      </section>
+
+      {/* 2. Immersive Full-Bleed Hero Banner */}
       <TrendingBanner />
 
-      {/* Hero Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Model Hero Banner (Rich Dark Velvet Wine with Gold accents for luxury feel) */}
-        <div className="lg:col-span-7 rounded-3xl overflow-hidden bg-[#2A141A] border border-[#C5A880]/30 relative flex flex-col justify-between p-8 sm:p-12 shadow-2xl min-h-[460px] md:min-h-[500px]">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
-          <div className="absolute right-0 bottom-0 top-0 w-1/2 md:w-3/5 pointer-events-none select-none">
-            <img src={purpleModel} alt="Premium Model" className="w-full h-full object-cover object-center translate-y-4 md:translate-y-0 scale-105 md:scale-110 filter drop-shadow-2xl" />
-          </div>
-
-          <div className="relative z-10">
-            <span className="text-xs uppercase tracking-widest bg-white/5 text-white/90 px-3.5 py-1.5 rounded-full font-bold border border-white/10">
-              ✨ QUICK_STYLE EXCLUSIVE
-            </span>
-          </div>
-
-          <div className="max-w-xs md:max-w-md relative z-10 space-y-4 my-auto">
-            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-white tracking-tight font-jakarta">
-              Unlock the Magic of Fashion
-            </h1>
-            <p className="text-rose-100/90 text-sm md:text-base leading-relaxed font-light">
-              Vibrant local boutique catalogs, real-time AI styling assistance, and quick scooter delivery. Try our AI fit matchmaking tool now!
-            </p>
-          </div>
-
-          <div className="relative z-10 flex items-center gap-6 mt-6">
-            <a href="#marketplace" className="bg-[#C5A880] hover:bg-[#C5A880]/90 text-[#FAF8F5] px-8 py-4 rounded-2xl font-bold text-sm shadow-xl transition-all duration-300 active:scale-95 flex items-center gap-2 group cursor-pointer">
-              <span>Shop Now</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </a>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-white"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-white/40"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-white/40"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-white/40"></span>
-            </div>
-          </div>
+      {/* 3. 'Trending Now' Horizontal Scroll Section */}
+      <section className="py-12 border-b border-panelBorder/30">
+        <div className="mb-6">
+          <span className="text-[10px] font-bold text-[#C5A880] uppercase tracking-[0.25em]">Hot This Week</span>
+          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight font-jakarta">Trending Now</h2>
         </div>
-
-        {/* Right: Pitch card pointing to the AI Chat Stylist */}
-        <div className="lg:col-span-5 glass-card rounded-3xl border border-panelBorder p-8 flex flex-col justify-between shadow-2xl relative min-h-[460px] md:min-h-[500px] bg-white">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A880]/5 rounded-full filter blur-3xl pointer-events-none"></div>
-          <div className="space-y-6">
-            <span className="text-[9px] font-bold bg-[#FAF0F1] border border-coral/10 text-coral px-3 py-1 rounded-full uppercase tracking-wider">
-              AI Concierge Service
-            </span>
-            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight font-jakarta">
-              Meet Your Personal AI Stylist
-            </h2>
-            <p className="text-sm text-gray-500 leading-relaxed font-light">
-              Describe your occasion, sizing problems, or look preferences, and our neural shopping pilot will scan local boutique inventory to coordinate your exact fit in seconds.
-            </p>
-            
-            <div className="border border-panelBorder/60 rounded-2xl p-4 bg-[#FAF8F5] space-y-3">
-              <div className="flex items-start gap-2.5 text-xs text-gray-700">
-                <span className="p-1 rounded bg-[#5C1324]/10 text-coral font-bold mt-0.5">Prompt</span>
-                <p className="italic">"Need a knit sweater for NIT Jamshedpur presentation today..."</p>
+        
+        {/* Horizontal scroll carousel */}
+        <div className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-none py-2 -mx-4 px-4 md:-mx-8 md:px-8">
+          {products.map((product, index) => {
+            const isHotItem = index % 2 === 0;
+            return (
+              <div
+                key={`trending-${product.id}`}
+                className="flex-shrink-0 w-[75%] sm:w-[280px] snap-start overflow-hidden flex flex-col gap-3 group bg-transparent border-none shadow-none"
+              >
+                {/* Product Image Container (No border, rounded radius, light background) */}
+                <div className="relative aspect-[3/4] w-full bg-white rounded-[20px] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-[#C5A880]/5 to-transparent opacity-60 group-hover:scale-105 transition-transform duration-500"></div>
+                  <img
+                    src={getImageAsset(product.id)}
+                    alt={product.name}
+                    className="w-full h-full object-cover relative z-10 group-hover:scale-105 transition-transform duration-500"
+                  />
+                  
+                  {/* Floating Urgency Badges / countdown timer */}
+                  <div className="absolute top-3.5 right-3.5 z-20 flex flex-col gap-1.5 items-end">
+                    {isHotItem ? (
+                      <CountdownTimer />
+                    ) : (
+                      <span className="text-[9px] font-extrabold tracking-widest px-2.5 py-1.5 rounded-lg bg-orange-600 text-white shadow-md uppercase animate-pulse flex items-center gap-1">
+                        <span>🔥</span>
+                        <span>HOT SELLING</span>
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Location Badge */}
+                  <span className="absolute bottom-3 left-3 z-20 text-[9px] font-bold px-2.5 py-1.5 rounded-xl bg-white/95 text-gray-800 border border-panelBorder/40 flex items-center gap-1 shadow-md">
+                    <MapPin className="w-2.5 h-2.5 text-[#C5A880]" />
+                    <span>{product.boutique}</span>
+                  </span>
+                </div>
+                
+                {/* Minimalist Info Area directly underneath */}
+                <div className="space-y-1 text-left px-1">
+                  <div className="flex items-center justify-between text-[9px] font-bold text-[#C5A880] uppercase tracking-wider">
+                    <span>{product.category}</span>
+                    <span>{product.fitAccuracy}% Fit Match</span>
+                  </div>
+                  <h3 className="font-semibold text-xs text-gray-900 truncate">{product.name}</h3>
+                  <div className="flex items-baseline gap-2 pt-0.5">
+                    <span className="text-sm font-extrabold text-gray-900">${product.price.toFixed(2)}</span>
+                    <span className="text-[10px] text-gray-400 line-through">${(product.price * 1.3).toFixed(2)}</span>
+                    <span className="text-[10px] text-emerald-600 font-bold">30% OFF</span>
+                  </div>
+                  <div className="pt-2 flex items-center gap-2">
+                    <button
+                      onClick={() => onOpen360Viewer(product)}
+                      className="flex-1 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-850 text-[10px] font-bold transition-all cursor-pointer text-center"
+                    >
+                      360° View
+                    </button>
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      className="flex-1 py-1.5 rounded-lg bg-gray-950 hover:bg-gray-850 text-white text-[10px] font-bold transition-all cursor-pointer text-center"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <a href="/chat" className="w-full py-4 rounded-xl bg-[#5C1324] hover:bg-[#430E1A] text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 text-center flex items-center justify-center gap-2 shadow-lg shadow-coral/10 cursor-pointer">
-            <Zap className="w-4 h-4 fill-white" />
-            <span>Launch AI Stylist Chat</span>
-          </a>
+            );
+          })}
         </div>
       </section>
 
-      {/* Live Marketplace */}
-      <section id="marketplace" className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      {/* 4. Live Marketplace Section */}
+      <section id="marketplace" className="py-12 border-b border-panelBorder/30">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-2 text-coral mb-2 animate-pulse-subtle">
-              <Zap className="w-5 h-5 text-coral fill-coral/10" />
-              <span className="text-xs font-bold uppercase tracking-widest">LIVE INVENTORY • LOCAL STOCKS</span>
+            <div className="flex items-center gap-2 text-coral mb-2">
+              <Zap className="w-4 h-4 text-coral fill-coral/10" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">LIVE INVENTORY • LOCAL STOCKS</span>
             </div>
             <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight font-jakarta">
               Flash-Delivery Marketplace
             </h2>
-            <p className="text-gray-600 text-sm mt-1">Ready-to-ship boutique garments near you. Instant calibration match.</p>
+            <p className="text-gray-500 text-xs mt-1">Ready-to-ship boutique garments near you. Instant calibration match.</p>
           </div>
-
-          {/* Framer motion category tabs */}
-          <CategoryTabs
-            activeCategory={activeCategory}
-            onSelectCategory={setCategory}
-          />
         </div>
 
         {/* Bento grid marketplace */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
           {filteredProducts.map((product) => (
             <ProductCard
               key={product.id}
@@ -159,9 +190,9 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
         </div>
       </section>
 
-      {/* Feature cards */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card rounded-2xl border border-panelBorder p-6 space-y-3 flex items-start gap-4 hover:border-coral/20 transition-colors bg-white">
+      {/* 5. Feature cards */}
+      <section className="py-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="glass-card rounded-[20px] border border-panelBorder/50 p-6 space-y-3 flex items-start gap-4 hover:border-[#C5A880]/20 transition-colors bg-white">
           <div className="bg-[#FAF8F5] p-3 rounded-xl border border-[#C5A880]/30 text-[#C5A880]">
             <Box className="w-6 h-6" />
           </div>
@@ -171,7 +202,7 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
           </div>
         </div>
 
-        <div className="glass-card rounded-2xl border border-panelBorder p-6 space-y-3 flex items-start gap-4 hover:border-coral/20 transition-colors bg-white">
+        <div className="glass-card rounded-[20px] border border-panelBorder/50 p-6 space-y-3 flex items-start gap-4 hover:border-[#C5A880]/20 transition-colors bg-white">
           <div className="bg-[#FAF8F5] p-3 rounded-xl border border-[#C5A880]/30 text-[#C5A880]">
             <ShieldCheck className="w-6 h-6" />
           </div>
@@ -181,7 +212,7 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
           </div>
         </div>
 
-        <div className="glass-card rounded-2xl border border-panelBorder p-6 space-y-3 flex items-start gap-4 hover:border-coral/20 transition-colors bg-white">
+        <div className="glass-card rounded-[20px] border border-panelBorder/50 p-6 space-y-3 flex items-start gap-4 hover:border-[#C5A880]/20 transition-colors bg-white">
           <div className="bg-[#FAF8F5] p-3 rounded-xl border border-[#C5A880]/30 text-[#C5A880]">
             <Bike className="w-6 h-6" />
           </div>
