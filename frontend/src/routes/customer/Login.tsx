@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ShieldCheck } from 'lucide-react';
+import { useStore } from '../../store/useStore';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { setIsLoggedIn, setAdminMode } = useStore();
   const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login success
+    if (formData.email === 'admin@quickstyle.io') {
+      setAdminMode(true);
+    }
+    setIsLoggedIn(true);
     navigate('/');
   };
 

@@ -14,6 +14,7 @@ interface AppState {
   couponDiscount: number;
   voiceSearching: boolean;
   adminMode: boolean;
+  isLoggedIn: boolean;
   
   // Actions
   addToCart: (product: Product, size: Size) => void;
@@ -31,6 +32,7 @@ interface AppState {
   setCouponDiscount: (discount: number) => void;
   setVoiceSearching: (searching: boolean) => void;
   setAdminMode: (mode: boolean) => void;
+  setIsLoggedIn: (mode: boolean) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -46,6 +48,7 @@ export const useStore = create<AppState>((set) => ({
   couponDiscount: 0,
   voiceSearching: false,
   adminMode: false,
+  isLoggedIn: false,
 
   addToCart: (product, size) => set((state) => {
     const existingIndex = state.cart.findIndex(
@@ -105,5 +108,7 @@ export const useStore = create<AppState>((set) => ({
 
   setVoiceSearching: (searching) => set({ voiceSearching: searching }),
 
-  setAdminMode: (mode) => set({ adminMode: mode })
+  setAdminMode: (mode) => set({ adminMode: mode }),
+
+  setIsLoggedIn: (mode) => set({ isLoggedIn: mode })
 }));

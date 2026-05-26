@@ -32,7 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const location = useLocation();
 
   // Zustand Store binding
-  const { adminMode, setAdminMode, voiceSearching, setVoiceSearching } = useStore();
+  const { adminMode, setAdminMode, voiceSearching, setVoiceSearching, isLoggedIn, setIsLoggedIn } = useStore();
 
   // Cycling search placeholder animation
   useEffect(() => {
@@ -177,34 +177,48 @@ export const Navbar: React.FC<NavbarProps> = ({
           <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-gray-700 mr-2">
             <Link to="/" className={`hover:text-coral transition-colors ${location.pathname === '/' ? 'text-coral' : ''}`}>Home</Link>
             <Link to="/chat" className={`hover:text-coral transition-colors ${location.pathname === '/chat' ? 'text-coral' : ''}`}>AI Pilot</Link>
-            <Link to="/account" className={`hover:text-coral transition-colors ${location.pathname === '/account' ? 'text-coral' : ''}`}>Account</Link>
-            <Link to="/signup" className={`hover:text-coral transition-colors ${location.pathname === '/signup' ? 'text-coral' : ''}`}>Sign Up</Link>
-            <Link to="/login" className={`hover:text-coral transition-colors ${location.pathname === '/login' ? 'text-coral' : ''}`}>Login</Link>
+            
+            {!isLoggedIn && !adminMode && (
+              <>
+                <Link to="/signup" className={`hover:text-coral transition-colors ${location.pathname === '/signup' ? 'text-coral' : ''}`}>Sign Up</Link>
+                <Link to="/login" className={`hover:text-coral transition-colors ${location.pathname === '/login' ? 'text-coral' : ''}`}>Login</Link>
+              </>
+            )}
+
+            {(isLoggedIn || adminMode) && (
+              <Link to="/account" className={`hover:text-coral transition-colors ${location.pathname === '/account' ? 'text-coral' : ''}`}>Account</Link>
+            )}
+
             {adminMode && (
-              <Link to="/admin/logs" className={`hover:text-coral transition-colors ${location.pathname.startsWith('/admin') ? 'text-coral' : ''}`}>Logs</Link>
+              <>
+                <Link to="/admin/logs" className={`hover:text-coral transition-colors ${location.pathname.startsWith('/admin') ? 'text-coral' : ''}`}>Logs</Link>
+                <span className="bg-[#5C1324] text-white px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">Admin</span>
+              </>
             )}
           </nav>
 
-          {/* Admin Dashboard Switcher */}
-          <button
-            onClick={() => {
-              const newMode = !adminMode;
-              setAdminMode(newMode);
-              if (newMode) {
-                navigate('/admin');
-              } else {
-                navigate('/');
-              }
-            }}
-            className={`p-3 rounded-xl border flex items-center justify-center transition-all duration-200 group ${
-              location.pathname.startsWith('/admin')
-                ? 'bg-[#C5A880] border-[#C5A880] text-white shadow-lg shadow-[#C5A880]/20'
-                : 'bg-white hover:bg-lavender-deep border-panelBorder text-[#C5A880] hover:text-[#5C1324]'
-            }`}
-            title={adminMode ? "Switch to Storefront" : "Switch to Admin Dashboard"}
-          >
-            {location.pathname.startsWith('/admin') ? <User className="w-5 h-5" /> : <LayoutDashboard className="w-5 h-5 group-hover:scale-110 transition-transform" />}
-          </button>
+          {/* Admin Dashboard Switcher (Hidden when actually logged in as Admin, as it acts automatically) */}
+          {!isLoggedIn && (
+            <button
+              onClick={() => {
+                const newMode = !adminMode;
+                setAdminMode(newMode);
+                if (newMode) {
+                  navigate('/admin/logs');
+                } else {
+                  navigate('/');
+                }
+              }}
+              className={`p-3 rounded-xl border flex items-center justify-center transition-all duration-200 group ${
+                location.pathname.startsWith('/admin')
+                  ? 'bg-[#C5A880] border-[#C5A880] text-white shadow-lg shadow-[#C5A880]/20'
+                  : 'bg-white hover:bg-lavender-deep border-panelBorder text-[#C5A880] hover:text-[#5C1324]'
+              }`}
+              title={adminMode ? "Switch to Storefront" : "Toggle Demo Admin"}
+            >
+              {location.pathname.startsWith('/admin') ? <User className="w-5 h-5" /> : <LayoutDashboard className="w-5 h-5 group-hover:scale-110 transition-transform" />}
+            </button>
+          )}
 
           <button
             onClick={onOpenCart}

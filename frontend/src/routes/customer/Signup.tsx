@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Mail, Lock, User, MapPin } from 'lucide-react';
+import { useStore } from '../../store/useStore';
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { setIsLoggedIn } = useStore();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', phone: '',
@@ -15,7 +17,7 @@ export default function Signup() {
     if (step === 1) {
       setStep(2);
     } else {
-      // Mock signup success
+      setIsLoggedIn(true);
       navigate('/');
     }
   };
