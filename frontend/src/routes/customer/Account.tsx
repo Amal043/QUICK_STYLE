@@ -1,22 +1,39 @@
-import React, { useState } from 'react';
-import { User, MapPin, Plus, Trash2, Edit2, Shield, Settings, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, MapPin, Plus, Trash2, Edit2, Shield, Settings, ChevronRight, Loader2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
 export default function Account() {
-  const { adminMode } = useStore();
+  const { adminMode, userProfile, setUserProfile } = useStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'addresses'>('profile');
+  const [loading, setLoading] = useState(!userProfile);
   
-  // Mock Data
-  const [profile, setProfile] = useState({
-    name: adminMode ? "Admin User" : "Customer",
-    email: adminMode ? "admin@quickstyle.io" : "customer@example.com",
-    phone: "+91 98765 43000"
-  });
-
-  const [addresses, setAddresses] = useState([
-    { id: 1, label: "Home", street: "Jadavpur University Road", area: "Jadavpur", city: "Kolkata", pincode: "700032", isDefault: true },
-    { id: 2, label: "Office", street: "Sector V, Salt Lake", area: "Salt Lake", city: "Kolkata", pincode: "700091", isDefault: false }
-  ]);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const email = adminMode ? 'admin@quickstyle.io' : 'customer@example.com';
+        const res = await fetch(`/api/v1/users/me?email=${email}`);
+        if (res.ok) {
+          const data = await res.json();
+          setUserProfile(data);
+          setProfile({ name: data.name, email: data.email, phone: data.phone || '' });
+          setAddresses(data.addresses.map((a: any, idx: number) => ({
+            id: idx + 1,
+            label: a.label,
+            street: a.street,
+            area: a.area,
+            city: a.city,
+            pincode: a.pincode,
+            isDefault: a.is_default
+          })));
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [adminMode]);
 
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [newAddress, setNewAddress] = useState({ label: '', street: '', area: '', city: 'Kolkata', pincode: '' });
@@ -31,6 +48,10 @@ export default function Account() {
   const setAsDefault = (id: number) => {
     setAddresses(addresses.map(a => ({ ...a, isDefault: a.id === id })));
   };
+
+  if (loading) {
+    return <div className="h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-coral" /></div>;
+  }
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 py-8 animate-fade-in">

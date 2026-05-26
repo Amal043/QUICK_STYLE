@@ -27,7 +27,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   if (!isOpen) return null;
 
   const totalQty = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const subtotal = cartItems.reduce((sum, item) => sum + item.product.price.selling_price * item.quantity, 0);
   const calibrationDiscount = subtotal > 0 ? 5.00 : 0;
 
   // Coupon QUICK20 provides 20% discount
@@ -112,7 +112,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         Size: {item.size}
                       </span>
                       <span className="text-[10px] text-gray-500">
-                        ${item.product.price.toFixed(2)} each
+                        ₹{item.product.price.selling_price.toFixed(2)} each
                       </span>
                     </div>
                   </div>
@@ -189,7 +189,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-gray-600">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-600">
                 <span>Hyper-Local Delivery (ETA ~12m)</span>
@@ -197,18 +197,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </div>
               <div className="flex justify-between text-xs text-gray-600">
                 <span>AI Stylist Calibration Discount</span>
-                <span className="text-coral">-${calibrationDiscount.toFixed(2)}</span>
+                <span className="text-coral">-₹{calibrationDiscount.toFixed(2)}</span>
               </div>
               {couponApplied && (
                 <div className="flex justify-between text-xs text-[#10B981]">
                   <span>Voucher Code (QUICK20)</span>
-                  <span>-${couponDiscount.toFixed(2)}</span>
+                  <span>-₹{couponDiscount.toFixed(2)}</span>
                 </div>
               )}
               <div className="h-[1px] bg-panelBorder/60 my-2"></div>
               <div className="flex justify-between text-sm font-bold text-gray-900">
                 <span>Total (Incl. tax)</span>
-                <span className="text-lg text-coral font-jakarta">${finalTotal.toFixed(2)}</span>
+                <span className="text-lg text-coral font-jakarta">₹{finalTotal.toFixed(2)}</span>
               </div>
             </div>
 

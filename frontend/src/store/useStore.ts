@@ -15,6 +15,9 @@ interface AppState {
   voiceSearching: boolean;
   adminMode: boolean;
   isLoggedIn: boolean;
+  wishlist: string[];
+  userProfile: any;
+  activeOrderId: string | null;
   
   // Actions
   addToCart: (product: Product, size: Size) => void;
@@ -33,12 +36,15 @@ interface AppState {
   setVoiceSearching: (searching: boolean) => void;
   setAdminMode: (mode: boolean) => void;
   setIsLoggedIn: (mode: boolean) => void;
+  toggleWishlist: (productId: string) => void;
+  setUserProfile: (profile: any) => void;
+  setActiveOrderId: (orderId: string | null) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
   cart: [],
   selectedSizes: {},
-  currentLocation: '📍 NIT Jamshedpur Campus',
+  currentLocation: '📍 Jadavpur, Kolkata',
   activeCategory: 'All',
   sizingProduct: null,
   cartOpen: false,
@@ -49,6 +55,9 @@ export const useStore = create<AppState>((set) => ({
   voiceSearching: false,
   adminMode: false,
   isLoggedIn: false,
+  wishlist: [],
+  userProfile: null,
+  activeOrderId: null,
 
   addToCart: (product, size) => set((state) => {
     const existingIndex = state.cart.findIndex(
@@ -110,5 +119,17 @@ export const useStore = create<AppState>((set) => ({
 
   setAdminMode: (mode) => set({ adminMode: mode }),
 
-  setIsLoggedIn: (mode) => set({ isLoggedIn: mode })
+  setIsLoggedIn: (mode) => set({ isLoggedIn: mode }),
+
+  toggleWishlist: (productId) => set((state) => {
+    const isWished = state.wishlist.includes(productId);
+    const newWishlist = isWished 
+      ? state.wishlist.filter(id => id !== productId)
+      : [...state.wishlist, productId];
+    return { wishlist: newWishlist };
+  }),
+
+  setUserProfile: (profile) => set({ userProfile: profile }),
+
+  setActiveOrderId: (orderId) => set({ activeOrderId: orderId }),
 }));

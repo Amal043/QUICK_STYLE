@@ -5,7 +5,7 @@ import { TrendingBanner } from '../../components/product/TrendingBanner';
 import { CategoryTabs } from '../../components/CategoryTabs';
 import { ProductCard } from '../../components/product/ProductCard';
 import type { Product, Size } from '../../types';
-import { ArrowRight, Box, ShieldCheck, Bike, Zap } from 'lucide-react';
+import { ArrowRight, Box, ShieldCheck, Bike, Zap, ChevronDown } from 'lucide-react';
 import purpleModel from '../../assets/purple_fur_model.png';
 
 interface HomeProps {
@@ -25,6 +25,9 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
 
   const { data: queryProducts } = useProducts();
   const [products, setProducts] = useState<Product[]>([]);
+  const [sortBy, setSortBy] = useState<string>('featured');
+  const [showHotDeals, setShowHotDeals] = useState<boolean>(false);
+  const [showDiscount, setShowDiscount] = useState<boolean>(false);
 
   // Sync query products to local state to support local stock deductions
   useEffect(() => {
@@ -46,9 +49,23 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
     addToCart(product, size);
   };
 
-  const filteredProducts = activeCategory === 'All'
-    ? products
+  let filteredProducts = activeCategory === 'All'
+    ? [...products]
     : products.filter(p => p.category === activeCategory);
+
+  if (showHotDeals) {
+    filteredProducts = filteredProducts.filter(p => p.price.discount_percent >= 50);
+  } else if (showDiscount) {
+    filteredProducts = filteredProducts.filter(p => p.price.discount_percent > 0);
+  }
+
+  if (sortBy === 'price_low') {
+    filteredProducts.sort((a, b) => a.price.selling_price - b.price.selling_price);
+  } else if (sortBy === 'price_high') {
+    filteredProducts.sort((a, b) => b.price.selling_price - a.price.selling_price);
+  } else if (sortBy === 'rating') {
+    filteredProducts.sort((a, b) => b.rating.average - a.rating.average);
+  }
 
   return (
     <div className="space-y-12 animate-fade-in">
@@ -122,18 +139,59 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
         </div>
       </section>
 
+      {/* Flipkart Style Filter Bar */}
+      <section className="bg-white border-y border-panelBorder py-3 mb-6 sticky top-[72px] z-30 shadow-sm">
+        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar px-2">
+          <button 
+            onClick={() => setSortBy(prev => prev === 'price_low' ? 'price_high' : prev === 'price_high' ? 'featured' : 'price_low')}
+            className={`flex items-center gap-1 border px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition
+              ${sortBy !== 'featured' ? 'bg-coral/10 border-coral text-coral' : 'bg-[#FAF8F5] border-panelBorder text-gray-700 hover:bg-gray-100'}`}
+          >
+            <span>{sortBy === 'price_low' ? 'Price: Low to High' : sortBy === 'price_high' ? 'Price: High to Low' : 'Sort By'}</span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${sortBy !== 'featured' ? 'rotate-180' : ''}`} />
+          </button>
+          
+          <button 
+            onClick={() => setSortBy(prev => prev === 'rating' ? 'featured' : 'rating')}
+            className={`border px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition
+              ${sortBy === 'rating' ? 'bg-coral/10 border-coral text-coral' : 'bg-[#FAF8F5] border-panelBorder text-gray-700 hover:bg-gray-100'}`}
+          >
+            Customer Ratings
+          </button>
+          
+          <button 
+            onClick={() => { setShowDiscount(!showDiscount); setShowHotDeals(false); }}
+            className={`border px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition
+              ${showDiscount ? 'bg-coral/10 border-coral text-coral' : 'bg-[#FAF8F5] border-panelBorder text-gray-700 hover:bg-gray-100'}`}
+          >
+            Discounted Items
+          </button>
+          
+          <button 
+            onClick={() => { setShowHotDeals(!showHotDeals); setShowDiscount(false); }}
+            className={`border px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition flex items-center gap-1
+              ${showHotDeals ? 'bg-coral text-white border-coral' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
+          >
+            <Zap className="w-3.5 h-3.5" /> Hot Deals (50%+ Off)
+          </button>
+        </div>
+      </section>
+
       {/* Live Marketplace */}
       <section id="marketplace" className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-coral mb-2 animate-pulse-subtle">
-              <Zap className="w-5 h-5 text-coral fill-coral/10" />
-              <span className="text-xs font-bold uppercase tracking-widest">LIVE INVENTORY • LOCAL STOCKS</span>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-sm border border-emerald-200">
+                assured
+              </span>
+              <span className="text-xs font-bold uppercase tracking-widest text-gray-500">FASHION & LIFESTYLE</span>
             </div>
-            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight font-jakarta">
-              Flash-Delivery Marketplace
+            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight font-jakarta flex items-center gap-3">
+              Top Picks For You
+              <span className="text-sm bg-coral text-white px-2 py-1 rounded shadow-sm animate-pulse font-bold">HOT DEALS</span>
             </h2>
-            <p className="text-gray-600 text-sm mt-1">Ready-to-ship boutique garments near you. Instant calibration match.</p>
+            <p className="text-gray-600 text-sm mt-1">Ready-to-ship boutique garments near you.</p>
           </div>
 
           {/* Framer motion category tabs */}
@@ -144,7 +202,7 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
         </div>
 
         {/* Bento grid marketplace */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
           {filteredProducts.map((product) => (
             <ProductCard
               key={product.id}

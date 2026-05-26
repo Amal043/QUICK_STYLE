@@ -100,6 +100,7 @@ class UserResponse(BaseModel):
     addresses: List[Address] = []
     size_profile: Optional[SizeProfile] = None
     purchase_history: List[PurchaseHistory] = []
+    wishlist: List[str] = []
     notification_prefs: Optional[NotificationPrefs] = None
     created_at: datetime
     last_active: Optional[datetime] = None
@@ -119,6 +120,7 @@ class UserDocument(BaseModel):
     size_profile: Optional[SizeProfile] = None
     return_history: List[ReturnHistory] = []
     purchase_history: List[PurchaseHistory] = []
+    wishlist: List[str] = []
     notification_prefs: NotificationPrefs = NotificationPrefs()
     payment_preauth: Optional[PaymentPreauth] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

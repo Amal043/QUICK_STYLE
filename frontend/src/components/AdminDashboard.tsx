@@ -1,6 +1,7 @@
 import React from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
-import { TrendingUp, Cpu, Zap, Package } from 'lucide-react';
+import { TrendingUp, Cpu, Zap, Package, Map } from 'lucide-react';
+import OrderStatus from '../routes/customer/OrderStatus';
 
 const salesData = [
   { time: '09:00', sales: 1200 },
@@ -220,6 +221,24 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* Live Order Tracking Section (Swiggy Map) */}
+      <div className="glass-card border border-panelBorder rounded-3xl p-6 shadow-xl bg-white animate-fade-in">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="bg-[#10B981]/10 p-2.5 rounded-xl text-emerald-700">
+            <Map className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-lg text-gray-900">Active Delivery Tracking</h3>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Live Algorithmic Partner Routing</p>
+          </div>
+        </div>
+        
+        {/* Render the full-fledged Swiggy Map Tracking Component */}
+        <div className="w-full">
+          <OrderStatus />
+        </div>
       </div>
 
     </div>

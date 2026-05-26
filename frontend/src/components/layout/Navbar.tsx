@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Zap, MapPin, Search, ShoppingBag, ChevronDown, Mic, MicOff, LayoutDashboard, User } from 'lucide-react';
+import { Zap, MapPin, Search, ShoppingBag, ChevronDown, Mic, MicOff, LayoutDashboard, User, Heart } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
 interface NavbarProps {
@@ -103,44 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </Link>
 
-          {/* Location dropdown */}
-          <div className="relative hidden sm:block">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-lavender-deep border border-panelBorder text-xs font-semibold text-gray-800 transition-all duration-200"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <MapPin className="w-3.5 h-3.5 text-[#C5A880]" />
-              <span>{currentLocation.replace('📍 ', '')}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-
-            {dropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)}></div>
-                <div className="absolute top-full left-0 mt-2 w-56 rounded-xl bg-obsidian border border-panelBorder shadow-xl p-2 z-20">
-                  <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Select Location</div>
-                  {[
-                    '📍 NIT Jamshedpur Campus',
-                    '📍 Adityapur Mall Area',
-                    '📍 Bistupur Market Hub',
-                    '📍 Tatanagar Station Area'
-                  ].map((loc) => (
-                    <button
-                      key={loc}
-                      onClick={() => {
-                        onChangeLocation(loc);
-                        setDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-lavender-deep hover:text-gray-900 transition-colors"
-                    >
-                      {loc}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          {/* Location dropdown removed as per request */}
         </div>
 
         {/* Center: Search pill with integrated voice microphone */}
@@ -218,6 +181,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               {location.pathname.startsWith('/admin') ? <User className="w-5 h-5" /> : <LayoutDashboard className="w-5 h-5 group-hover:scale-110 transition-transform" />}
             </button>
+          )}
+
+          {/* Wishlist Icon */}
+          {isLoggedIn && (
+            <Link
+              to="/account"
+              className="relative bg-white hover:bg-lavender-deep border border-panelBorder p-3 rounded-xl flex items-center justify-center transition-all duration-200 group text-[#C5A880] hover:text-[#5C1324]"
+            >
+              <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              {useStore.getState().wishlist.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1.5 rounded-full bg-[#5C1324] border-2 border-[#FAF8F5] flex items-center justify-center text-[10px] font-extrabold text-white">
+                  {useStore.getState().wishlist.length}
+                </span>
+              )}
+            </Link>
           )}
 
           <button

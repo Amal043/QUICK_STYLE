@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navbar } from './components/layout/Navbar';
 import { CartDrawer } from './components/CartDrawer';
 import { SizingModal } from './components/SizingModal';
-import { FulfillmentSheet } from './components/FulfillmentSheet';
-import { Viewer360Modal } from './components/Viewer360Modal';
+
+import { ProductDetails } from './components/product/ProductDetails';
 import { useStore } from './store/useStore';
 import type { Product } from './types';
 import { Zap } from 'lucide-react';
@@ -39,7 +39,10 @@ function AppShell() {
     setCouponApplied,
     setCouponDiscount,
     originHub,
+    addToCart,
+    setActiveOrderId,
   } = useStore();
+  const navigate = useNavigate();
 
   const [viewer360Product, setViewer360Product] = useState<Product | null>(null);
 
@@ -50,12 +53,16 @@ function AppShell() {
   const handlePlaceOrder = (couponApplied: boolean, couponDiscount: number) => {
     if (cart.length === 0) return;
     const primaryItem = cart[0].product;
-    setOriginHub(`${primaryItem.boutique} Hub`);
+    setOriginHub(`${primaryItem.store_name || primaryItem.boutique}`);
     setCouponApplied(couponApplied);
     setCouponDiscount(couponDiscount);
     setCartOpen(false);
     clearCart();
-    setFulfillmentOpen(true);
+    
+    // Generate Order ID and Navigate to Tracking Page
+    const orderId = `FW-${Math.floor(100000 + Math.random() * 900000)}`;
+    setActiveOrderId(orderId);
+    navigate(`/order-status?order_id=${orderId}`);
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -158,18 +165,14 @@ function AppShell() {
         onPlaceOrder={handlePlaceOrder}
       />
 
-      {/* Live Delivery Tracking Sheet */}
-      <FulfillmentSheet
-        isOpen={fulfillmentOpen}
-        onClose={() => setFulfillmentOpen(false)}
-        originHub={originHub}
-      />
 
-      {/* 360° Product Viewer Modal */}
+
+      {/* 360° Product Viewer / Product Details Modal */}
       {viewer360Product && (
-        <Viewer360Modal
+        <ProductDetails
           product={viewer360Product}
           onClose={() => setViewer360Product(null)}
+          onAddToCart={(product, size) => addToCart(product, size)}
         />
       )}
     </div>
