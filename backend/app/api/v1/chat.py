@@ -1,22 +1,20 @@
-"""
-AI Stylist Chat API — POST /api/v1/chat/message
-Processes user styling queries and returns intelligent recommendations.
-"""
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
-import random
 from app.db.connection import get_db
+from app.agents.supervisor import negotiation_graph
+from app.agents.safety_agent import pre_retrieval_guardrail, post_retrieval_guardrail
+from app.websocket.connection_manager import manager
 
 router = APIRouter()
-
 
 class ChatMessage(BaseModel):
     session_id: str
     message: str
+    user_id: Optional[str] = None
     location: str = "NIT Jamshedpur Campus"
-
+    user_photo_url: Optional[str] = None
 
 class ChatResponse(BaseModel):
     session_id: str
@@ -24,139 +22,88 @@ class ChatResponse(BaseModel):
     product_recommendations: list[dict] = []
     timestamp: str
 
-
-async def generate_ai_reply(message: str, location: str, db) -> tuple[str, list[dict]]:
-    """Rule-based AI stylist reply generator that queries MongoDB Atlas for actual products."""
-    msg = message.lower()
-    recommendations = []
-
-    if any(w in msg for w in ["coffee", "spilled", "stain", "fresh shirt"]):
-        prod = await db.products.find_one({"name": "Apex Tech Hoodie"})
-        if prod:
-            reply = (
-                "Emergency wardrobe rescue incoming! 🚨 No worries — we got you covered.\n\n"
-                f"Based on your location near **{location}**, I've found the **Apex Tech Hoodie (Lavender)** "
-                f"at {prod['store_name']} just 0.8 km away. It has a **{prod.get('fit_confidence_avg', 94)}% True Fit score** "
-                "for your size profile. Can be delivered in under **11 minutes**."
-            )
-            recommendations = [{
-                "id": str(prod["_id"]),
-                "name": prod["name"],
-                "price": prod["price"]["selling_price"],
-                "boutique": prod["store_name"],
-                "fit_accuracy": prod.get("fit_confidence_avg", 94),
-                "suggested_size": "L"
-            }]
-        else:
-            reply = "I see you need a fresh hoodie or shirt due to a spill! Let me check what we have in stock near you."
-
-    elif any(w in msg for w in ["formal", "presentation", "interview", "office"]):
-        blazer = await db.products.find_one({"name": "Obsidian Formal Blazer"})
-        sweater = await db.products.find_one({"name": "Amethyst Knit Sweater"})
-        
-        reply = "A polished look for the big moment! 👔\n\n"
-        if blazer or sweater:
-            reply += "I recommend the "
-            if blazer:
-                reply += f"**{blazer['name']}** for a structured statement, "
-                recommendations.append({
-                    "id": str(blazer["_id"]),
-                    "name": blazer["name"],
-                    "price": blazer["price"]["selling_price"],
-                    "boutique": blazer["store_name"],
-                    "fit_accuracy": blazer.get("fit_confidence_avg", 93),
-                    "suggested_size": "M"
-                })
-            if sweater:
-                if blazer:
-                    reply += "or the elegant "
-                reply += f"**{sweater['name']}** for smart-casual. "
-                recommendations.append({
-                    "id": str(sweater["_id"]),
-                    "name": sweater["name"],
-                    "price": sweater["price"]["selling_price"],
-                    "boutique": sweater["store_name"],
-                    "fit_accuracy": sweater.get("fit_confidence_avg", 96),
-                    "suggested_size": "M"
-                })
-            reply += "Both pair perfectly with dark trousers."
-        else:
-            reply += "I'm checking our boutiques for formal wear near you now."
-
-    elif any(w in msg for w in ["gym", "workout", "activewear", "running", "sport"]):
-        prod = await db.products.find_one({"name": "Aero-Knit Activewear Tee"})
-        if prod:
-            reply = (
-                "Let's get you geared up for peak performance! 💪\n\n"
-                f"The **{prod['name']}** is unbeatable — moisture-wicking, 4-way stretch, "
-                f"and a stunning **{prod.get('fit_confidence_avg', 98)}% True Fit accuracy**. "
-                f"Available at {prod['store_name']} (1.9 km), delivered in 15 mins."
-            )
-            recommendations = [{
-                "id": str(prod["_id"]),
-                "name": prod["name"],
-                "price": prod["price"]["selling_price"],
-                "boutique": prod["store_name"],
-                "fit_accuracy": prod.get("fit_confidence_avg", 98),
-                "suggested_size": "M"
-            }]
-        else:
-            reply = "I'm searching for performance activewear shirts near you."
-
-    elif any(w in msg for w in ["night", "party", "club", "date", "evening"]):
-        prod = await db.products.find_one({"name": "Vanguard Utility Jacket"})
-        if prod:
-            reply = (
-                "Time to turn heads! ✨\n\n"
-                f"I suggest the **{prod['name']}** for an edgy evening look — structured, "
-                f"bold, and available at {prod['store_name']}. At **{prod.get('fit_confidence_avg', 92)}% True Fit**, "
-                "it will fit perfectly for your profile. Estimated delivery: **12 minutes**."
-            )
-            recommendations = [{
-                "id": str(prod["_id"]),
-                "name": prod["name"],
-                "price": prod["price"]["selling_price"],
-                "boutique": prod["store_name"],
-                "fit_accuracy": prod.get("fit_confidence_avg", 92),
-                "suggested_size": "L"
-            }]
-        else:
-            reply = "Looking for a stylish evening look? Let me browse nearby party/utility wear."
-
-    else:
-        tip = random.choice([
-            "layering a hoodie over a slim-fit tee",
-            "pairing earth tones with white sneakers",
-            "structured blazers for an instant polish upgrade",
-        ])
-        reply = (
-            f"Great styling question! 🎨 Based on current boutique stock near **{location}**, "
-            f"here are some fresh picks. Pro styling tip: try **{tip}** for an effortless elevated look.\n\n"
-            "Shall I narrow it down by occasion, color, or budget?"
-        )
-        
-        cursor = db.products.find({"active": True}).limit(2)
-        prods = await cursor.to_list(length=2)
-        for p in prods:
-            recommendations.append({
-                "id": str(p["_id"]),
-                "name": p["name"],
-                "price": p["price"]["selling_price"],
-                "boutique": p["store_name"],
-                "fit_accuracy": p.get("fit_confidence_avg", 95),
-                "suggested_size": "M"
-            })
-
-    return reply, recommendations
-
-
 @router.post("/message", response_model=ChatResponse)
 async def send_message(body: ChatMessage, db=Depends(get_db)):
-    """Process a user chat message and return AI stylist reply with product suggestions."""
-    reply, recommendations = await generate_ai_reply(body.message, body.location, db)
+    """Process a user chat message using the multi-agent Negotiation Graph."""
+    
+    # Pre-Retrieval Guardrail
+    is_safe, error_msg = await pre_retrieval_guardrail(body.message)
+    if not is_safe:
+        return ChatResponse(
+            session_id=body.session_id,
+            reply=f"Message blocked by Safety Policy Checker: {error_msg}",
+            product_recommendations=[],
+            timestamp=datetime.utcnow().isoformat(),
+        )
+    
+    initial_state = {
+        "session_id": body.session_id,
+        "user_id": body.user_id,
+        "user_location": {"address": body.location},
+        "user_photo_url": body.user_photo_url,
+        "raw_query": body.message,
+        "extracted_entities": {},
+        "negotiation_round": 1,
+        "negotiation_history": [],
+        "negotiation_complete": False,
+        "stylist_proposal": None,
+        "anti_return_verdict": None,
+        "filtered_products": [],
+        "agent_log": []
+    }
+    
+    # Run intent detector first
+    from app.agents.intent_detector import intent_detector_node
+    intent_state = await intent_detector_node(initial_state)
+    initial_state.update(intent_state)
+    
+    extracted = intent_state.get("extracted_entities", {})
+    if extracted.get("is_shopping") is False and extracted.get("conversational_reply"):
+        return ChatResponse(
+            session_id=body.session_id,
+            reply=extracted["conversational_reply"],
+            product_recommendations=[],
+            timestamp=datetime.utcnow().isoformat(),
+        )
+    
+    # Run the graph
+    final_state = await negotiation_graph.ainvoke(initial_state)
+    
+    # Determine the reply
+    reply = "Here's what I found for you!"
+    recommendations = []
+    
+    if final_state.get("stylist_proposal"):
+        proposal = final_state["stylist_proposal"]
+        recommendations.append(proposal.get("product_data", {}))
+        
+        if final_state.get("negotiation_complete"):
+            if "conflict" not in [h.get("resolution") for h in final_state.get("negotiation_history", [])]:
+                reply = f"I found the perfect match: {proposal.get('product_name')}. It has an excellent fit confidence!"
+            else:
+                reply = f"After some debate with our Anti-Return system, we settled on the {proposal.get('product_name')}. Note: there might be a slight fit risk based on past returns, but it's the closest match."
+        else:
+             reply = f"I'm suggesting the {proposal.get('product_name')}, but our agents are still verifying fit."
+    else:
+        reply = "I couldn't find any products matching your exact criteria right now. Could you try adjusting your budget or style?"
+        
+    # Post-Retrieval Guardrail
+    safe_reply = await post_retrieval_guardrail(reply)
+        
     return ChatResponse(
         session_id=body.session_id,
-        reply=reply,
+        reply=safe_reply,
         product_recommendations=recommendations,
         timestamp=datetime.utcnow().isoformat(),
     )
+
+@router.websocket("/{session_id}")
+async def websocket_chat_endpoint(websocket: WebSocket, session_id: str):
+    await manager.connect(websocket, session_id)
+    try:
+        while True:
+            # We just keep the connection open to receive broadcasted events
+            data = await websocket.receive_text()
+            # If client sends data, we could process it here
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, session_id)

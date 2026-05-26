@@ -177,8 +177,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-gray-700 mr-2">
             <Link to="/" className={`hover:text-coral transition-colors ${location.pathname === '/' ? 'text-coral' : ''}`}>Home</Link>
             <Link to="/chat" className={`hover:text-coral transition-colors ${location.pathname === '/chat' ? 'text-coral' : ''}`}>AI Pilot</Link>
+            <Link to="/account" className={`hover:text-coral transition-colors ${location.pathname === '/account' ? 'text-coral' : ''}`}>Account</Link>
             {adminMode && (
-              <Link to="/admin" className={`hover:text-coral transition-colors ${location.pathname === '/admin' ? 'text-coral' : ''}`}>Dashboard</Link>
+              <Link to="/admin/logs" className={`hover:text-coral transition-colors ${location.pathname.startsWith('/admin') ? 'text-coral' : ''}`}>Logs</Link>
             )}
           </nav>
 

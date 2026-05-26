@@ -5,16 +5,16 @@ import { useStore } from '../../store/useStore';
 
 // Coordinates for simulation
 const locations = {
-  jamshedpur: { lat: 22.7766, lng: 86.1436 }, // NIT Jamshedpur Campus
-  boutiqueA: { lat: 22.7820, lng: 86.1480 },  // Boutique A Hub
-  boutiqueB: { lat: 22.7710, lng: 86.1360 },  // Boutique B Hub
-  boutiqueC: { lat: 22.7790, lng: 86.1390 },  // Boutique C Hub
-  boutiqueD: { lat: 22.7880, lng: 86.1550 }   // Boutique D Hub
+  jadavpur: { lat: 22.4981, lng: 88.3653 }, // User Address (Jadavpur)
+  boutiqueA: { lat: 22.5015, lng: 88.3616 }, // South City Luxe
+  boutiqueB: { lat: 22.5555, lng: 88.3524 }, // Park Street
+  boutiqueC: { lat: 22.5804, lng: 88.4231 }, // Salt Lake
+  boutiqueD: { lat: 22.5726, lng: 88.4633 }  // New Town
 };
 
 const mapContainerStyle = {
   width: '100%',
-  height: '240px',
+  height: '350px',
   borderRadius: '16px'
 };
 
@@ -30,19 +30,19 @@ export default function OrderStatus() {
   // Google Maps Loader
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: "" // blank key for dev view sandbox
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""
   });
 
   // Resolve current boutique coordinates
   const getBoutiqueCoords = () => {
-    if (originHub.includes('Boutique B')) return locations.boutiqueB;
-    if (originHub.includes('Boutique C')) return locations.boutiqueC;
-    if (originHub.includes('Boutique D')) return locations.boutiqueD;
+    if (originHub.includes('Park Street')) return locations.boutiqueB;
+    if (originHub.includes('Salt Lake')) return locations.boutiqueC;
+    if (originHub.includes('New Town')) return locations.boutiqueD;
     return locations.boutiqueA;
   };
 
   const startCoords = getBoutiqueCoords();
-  const endCoords = locations.jamshedpur;
+  const endCoords = locations.jadavpur;
 
   const [courierPos, setCourierPos] = useState({ lat: startCoords.lat, lng: startCoords.lng });
 
@@ -58,11 +58,11 @@ export default function OrderStatus() {
     setProgress(0);
     setActiveStep(1);
     setEta(12);
-    setStatusMessage("🤖 AI Stylist calibrating stock and fit sizing patterns...");
+    setStatusMessage("🤖 AI finding nearest vacant partner...");
 
     // WebSocket live coordinate receiver
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/tracking/${orderId}`;
+    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/tracking/${orderId}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -75,11 +75,13 @@ export default function OrderStatus() {
         setProgress(data.progress);
         setEta(data.eta_minutes);
         setStatusMessage(data.status);
-        setCourierPos({ lat: data.lat, lng: data.lng });
+        if (data.lat && data.lng) {
+            setCourierPos({ lat: data.lat, lng: data.lng });
+        }
 
-        if (data.progress < 33) {
+        if (data.progress < 45) {
           setActiveStep(1);
-        } else if (data.progress < 66) {
+        } else if (data.progress < 95) {
           setActiveStep(2);
         } else {
           setActiveStep(3);
@@ -137,10 +139,10 @@ export default function OrderStatus() {
           </div>
           <div>
             <h3 className="font-extrabold text-lg text-gray-900">
-              Order Dispatched Successfully!
+              Order Tracking
             </h3>
             <p className="text-xs text-gray-500">
-              Order Ref: <span className="text-coral font-semibold">{orderRef}</span> • Delivery to <span className="text-gray-950 font-bold">NIT Jamshedpur Campus</span>
+              Order Ref: <span className="text-coral font-semibold">{orderRef}</span> • Delivery to <span className="text-gray-950 font-bold">Jadavpur, Kolkata</span>
             </p>
           </div>
         </div>
@@ -173,30 +175,30 @@ export default function OrderStatus() {
               {isStepComplete(1) ? <Check className="w-4 h-4" /> : <Store className="w-4 h-4" />}
             </div>
             <div className="space-y-0.5">
-              <p className={`text-xs font-bold transition-colors ${getStepLabelClass(1)}`}>AI Parsing Stock</p>
-              <p className="text-[9px] text-gray-500 font-medium">Calibrating Fit Model</p>
+              <p className={`text-xs font-bold transition-colors ${getStepLabelClass(1)}`}>Partner to Shop</p>
+              <p className="text-[9px] text-gray-500 font-medium">Preparing Order</p>
             </div>
           </div>
 
           {/* Step 2 */}
           <div className="flex flex-col items-center space-y-2 text-center">
             <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-300 ${getStepIconClass(2)}`}>
-              {isStepComplete(2) ? <Check className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+              {isStepComplete(2) ? <Check className="w-4 h-4" /> : <Bike className="w-4 h-4" />}
             </div>
             <div className="space-y-0.5">
-              <p className={`text-xs font-bold transition-colors ${getStepLabelClass(2)}`}>Boutique Packing</p>
-              <p className="text-[9px] text-gray-500 font-medium">Sealing Magnetic Box</p>
+              <p className={`text-xs font-bold transition-colors ${getStepLabelClass(2)}`}>Out for Delivery</p>
+              <p className="text-[9px] text-gray-500 font-medium">Shop to Home</p>
             </div>
           </div>
 
           {/* Step 3 */}
           <div className="flex flex-col items-center space-y-2 text-center">
             <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-300 ${getStepIconClass(3)}`}>
-              {progress === 100 ? <Check className="w-4 h-4" /> : <Bike className="w-4 h-4" />}
+              {progress === 100 ? <Check className="w-4 h-4" /> : <Home className="w-4 h-4" />}
             </div>
             <div className="space-y-0.5">
-              <p className={`text-xs font-bold transition-colors ${getStepLabelClass(3)}`}>Courier Dispatched</p>
-              <p className="text-[9px] text-gray-500 font-medium">On route in {eta}m</p>
+              <p className={`text-xs font-bold transition-colors ${getStepLabelClass(3)}`}>Delivered</p>
+              <p className="text-[9px] text-gray-500 font-medium">At your doorstep</p>
             </div>
           </div>
 
@@ -208,8 +210,8 @@ export default function OrderStatus() {
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={mapContainerStyle}
-            center={locations.jamshedpur}
-            zoom={14}
+            center={locations.jadavpur}
+            zoom={13}
             options={{
               disableDefaultUI: true,
               styles: [
@@ -236,10 +238,10 @@ export default function OrderStatus() {
               }}
             />
 
-            {/* Destination campus Marker */}
+            {/* Destination Marker */}
             <Marker
-              position={locations.jamshedpur}
-              title="NIT Jamshedpur"
+              position={endCoords}
+              title="Jadavpur, Kolkata"
               icon={{
                 path: "M0-20 A10 10 0 0 0 -10 -10 C -10 -3 0 10 0 10 C 0 10 10 -3 10 -10 A10 10 0 0 0 0 -20 Z",
                 fillColor: '#5C1324',
@@ -251,7 +253,7 @@ export default function OrderStatus() {
             />
 
             {/* Moving Courier Rider Marker */}
-            {progress > 33 && (
+            {progress > 5 && (
               <Marker
                 position={courierPos}
                 title="Courier Scooter Rider"
@@ -278,7 +280,7 @@ export default function OrderStatus() {
             />
           </GoogleMap>
         ) : (
-          /* Backup premium SVG visual map representation if maps loader is pending/offline */
+          /* Backup SVG map representation if maps loader is pending/offline */
           <div className="h-44 w-full bg-white border border-panelBorder p-4 flex items-center justify-between relative rounded-xl overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.06)_10%,transparent_70%)]"></div>
             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.015)_1px,transparent_1px)] bg-[size:16px_16px]"></div>
@@ -307,7 +309,7 @@ export default function OrderStatus() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Destination</p>
-                  <p className="text-xs font-bold text-gray-900">NIT Jamshedpur</p>
+                  <p className="text-xs font-bold text-gray-900">Jadavpur</p>
                 </div>
                 <div className="bg-white border border-panelBorder p-2.5 rounded-xl text-emerald">
                   <Home className="w-5 h-5" />
@@ -321,17 +323,6 @@ export default function OrderStatus() {
             {statusMessage}
           </span>
         </div>
-      </div>
-
-      {/* Action Panel */}
-      <div className="flex items-center justify-end gap-3 pt-2">
-        <button
-          onClick={() => alert('GPS Simulator: Courier coordinates calibrating at 1.2 Hz frequency.')}
-          className="px-5 py-2.5 rounded-xl bg-[#10B981] hover:bg-[#10B981]/90 text-white text-xs font-extrabold tracking-wide uppercase transition-all shadow-lg shadow-emerald/10 flex items-center gap-1.5 cursor-pointer"
-        >
-          <Compass className="w-3.5 h-3.5" />
-          <span>Calibrate GPS</span>
-        </button>
       </div>
 
     </div>

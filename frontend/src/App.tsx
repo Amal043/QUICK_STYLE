@@ -10,10 +10,11 @@ import { useStore } from './store/useStore';
 import type { Product } from './types';
 import { Zap } from 'lucide-react';
 
-// Route pages
 import Home from './routes/customer/Home';
 import Chat from './routes/customer/Chat';
 import OrderStatus from './routes/customer/OrderStatus';
+import Account from './routes/customer/Account';
+import Signup from './routes/customer/Signup';
 import AdminDashboard from './routes/admin/Dashboard';
 
 const queryClient = new QueryClient();
@@ -82,7 +83,9 @@ function AppShell() {
           />
           <Route path="/chat" element={<Chat />} />
           <Route path="/order-status" element={<OrderStatus />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/admin/logs" element={<AdminDashboard />} />
         </Routes>
       </main>
 
