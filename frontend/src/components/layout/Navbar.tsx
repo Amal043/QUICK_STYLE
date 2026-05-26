@@ -178,6 +178,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Link to="/" className={`hover:text-coral transition-colors ${location.pathname === '/' ? 'text-coral' : ''}`}>Home</Link>
             <Link to="/chat" className={`hover:text-coral transition-colors ${location.pathname === '/chat' ? 'text-coral' : ''}`}>AI Pilot</Link>
             <Link to="/account" className={`hover:text-coral transition-colors ${location.pathname === '/account' ? 'text-coral' : ''}`}>Account</Link>
+            <Link to="/signup" className={`hover:text-coral transition-colors ${location.pathname === '/signup' ? 'text-coral' : ''}`}>Sign Up</Link>
+            <Link to="/login" className={`hover:text-coral transition-colors ${location.pathname === '/login' ? 'text-coral' : ''}`}>Login</Link>
             {adminMode && (
               <Link to="/admin/logs" className={`hover:text-coral transition-colors ${location.pathname.startsWith('/admin') ? 'text-coral' : ''}`}>Logs</Link>
             )}

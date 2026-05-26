@@ -15,6 +15,7 @@ import Chat from './routes/customer/Chat';
 import OrderStatus from './routes/customer/OrderStatus';
 import Account from './routes/customer/Account';
 import Signup from './routes/customer/Signup';
+import Login from './routes/customer/Login';
 import AdminDashboard from './routes/admin/Dashboard';
 
 const queryClient = new QueryClient();
@@ -85,6 +86,7 @@ function AppShell() {
           <Route path="/order-status" element={<OrderStatus />} />
           <Route path="/account" element={<Account />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/admin/logs" element={<AdminDashboard />} />
         </Routes>
       </main>
