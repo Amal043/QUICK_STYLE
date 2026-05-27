@@ -3,7 +3,7 @@ import { motion, useMotionValue } from 'framer-motion';
 import { useDrag } from '@use-gesture/react';
 import { X, RotateCw, Sparkles, HelpCircle } from 'lucide-react';
 import type { Product } from '../types';
-import { getImageAsset } from './MarketplaceGrid';
+import { getImageAsset } from './product/ProductCard';
 
 interface Viewer360ModalProps {
   product: Product | null;

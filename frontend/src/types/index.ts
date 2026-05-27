@@ -1,20 +1,31 @@
 // QUICK_STYLE Global TypeScript Interfaces
 
-export type Size = 'S' | 'M' | 'L' | 'XL';
+export type Size = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 export interface Product {
   id: string | number;
   name: string;
-  price: number;
+  price: { mrp: number; selling_price: number; discount_percent: number; };
   image: string;
-  category: 'Streetwear' | 'Formals' | 'Activewear' | 'Loungewear';
+  gallery: string[];
+  frames_360: string[];
+  has_360: boolean;
+  category: string;
+  subcategory: string;
+  brand: string;
+  gender: 'men' | 'women' | 'unisex';
   boutique: string;
+  store_name: string;
+  store_location: { type: string; coordinates: number[] };
   distance: number;
+  delivery_eta: number;
   fitAccuracy: number;
-  stock: number;
+  stock: Record<string, number>;
   description: string;
-  rating: number;
-  reviewsCount: number;
+  rating: { average: number; count: number };
+  colors: any[];
+  sizes_available: string[];
+  tags: string[];
 }
 
 export interface CartItem {

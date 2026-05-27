@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from app.db.connection import connect_to_mongo, close_mongo_connection
 from app.db.indexes import create_indexes
 from app.db.connection import get_db
-from app.api.v1 import products, tracking, chat, orders, auth
+from app.api.v1 import products, tracking, chat, orders, auth, users
 from app.config import settings
 
 
@@ -49,6 +49,7 @@ app.add_middleware(
 
 # ── Routers ───────────────────────────────────────────────────────
 app.include_router(auth.router,     prefix="/api/v1/auth",     tags=["Auth"])
+app.include_router(users.router,    prefix="/api/v1/users",    tags=["Users"])
 app.include_router(products.router, prefix="/api/v1/products", tags=["Products"])
 app.include_router(orders.router,   prefix="/api/v1/orders",   tags=["Orders"])
 app.include_router(chat.router,     prefix="/api/v1/chat",     tags=["AI Stylist"])

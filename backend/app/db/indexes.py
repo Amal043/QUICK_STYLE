@@ -12,7 +12,19 @@ async def create_indexes(db: AsyncIOMotorDatabase):
 
     # ── users ──────────────────────────────────────────────────────
     await db.users.create_index("email", unique=True)
-    await db.users.create_index("phone", unique=True, sparse=True)
+    try:
+        await db.users.create_index("phone", unique=True, sparse=True)
+    except Exception as e:
+        if "IndexKeySpecsConflict" in str(e) or "IndexOptionsConflict" in str(e) or "same name" in str(e):
+            print("  - phone index conflict detected. Dropping old 'phone_1' index and recreating...")
+            try:
+                await db.users.drop_index("phone_1")
+                await db.users.create_index("phone", unique=True, sparse=True)
+            except Exception as drop_err:
+                print(f"  - Failed to drop conflicting phone index: {drop_err}. Retrying with custom name...")
+                await db.users.create_index("phone", unique=True, sparse=True, name="phone_unique_sparse")
+        else:
+            raise e
     await db.users.create_index("role")
     await db.users.create_index("last_active")
     print("  - users indexes")

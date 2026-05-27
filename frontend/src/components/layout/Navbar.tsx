@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Zap, MapPin, Search, ShoppingBag, ChevronDown, Mic, MicOff, LayoutDashboard, User } from 'lucide-react';
+import { Zap, MapPin, Search, ShoppingBag, ChevronDown, Mic, MicOff, LayoutDashboard, User, Heart } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { getPreciseLocation } from '../../lib/geolocation';
 
 interface NavbarProps {
   cartCount: number;
@@ -30,9 +31,93 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [fade, setFade] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const [locLoading, setLocLoading] = useState(false);
 
   // Zustand Store binding
-  const { adminMode, setAdminMode, voiceSearching, setVoiceSearching } = useStore();
+  const { 
+    adminMode, 
+    setAdminMode, 
+    voiceSearching, 
+    setVoiceSearching, 
+    isLoggedIn, 
+    setIsLoggedIn,
+    setLocation,
+    setUserCoords
+  } = useStore();
+
+  const handleRequestLocation = () => {
+    setLocLoading(true);
+    
+    getPreciseLocation(
+      async (coords) => {
+        const { lat, lng } = coords;
+        setUserCoords({ lat, lng });
+
+        // Nominatim reverse geocode
+        try {
+          const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
+            headers: { 'Accept-Language': 'en' }
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.address) {
+              const addr = data.address;
+              const placeName = addr.suburb || addr.neighbourhood || addr.city_district || addr.city || addr.town || addr.village || "";
+              const stateName = addr.state || "";
+              const formatted = placeName ? `📍 ${placeName}, ${stateName}` : `📍 ${data.display_name.split(',')[0]}, ${stateName}`;
+              setLocation(formatted);
+              setLocLoading(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+
+        // Fallback to IP address city names
+        try {
+          const resp = await fetch('https://freeipapi.com/api/json');
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.cityName && data.regionName) {
+              setLocation(`📍 ${data.cityName}, ${data.regionName}`);
+              setLocLoading(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+
+        // Local coordinates region check
+        const isKolkata = Math.abs(lat - 22.5) < 0.5 && Math.abs(lng - 88.3) < 0.5;
+        setLocation(isKolkata ? '📍 Kolkata, West Bengal' : '📍 Jamshedpur, Jharkhand');
+        setLocLoading(false);
+      },
+      async (error) => {
+        console.warn("[GEOLOCATION] Navbar geolocation error:", error);
+        try {
+          const resp = await fetch('https://freeipapi.com/api/json');
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.cityName && data.regionName) {
+              setLocation(`📍 ${data.cityName}, ${data.regionName}`);
+              const fallbackLat = data.latitude || 22.4981;
+              const fallbackLng = data.longitude || 88.3653;
+              setUserCoords({ lat: fallbackLat, lng: fallbackLng });
+              setLocLoading(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+        setLocation('📍 Kolkata, West Bengal');
+        setUserCoords({ lat: 22.4981, lng: 88.3653 });
+        setLocLoading(false);
+      }
+    );
+  };
 
   // Cycling search placeholder animation
   useEffect(() => {
@@ -103,44 +188,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </Link>
 
-          {/* Location dropdown */}
-          <div className="relative hidden sm:block">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-lavender-deep border border-panelBorder text-xs font-semibold text-gray-800 transition-all duration-200"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <MapPin className="w-3.5 h-3.5 text-[#C5A880]" />
-              <span>{currentLocation.replace('📍 ', '')}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-
-            {dropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)}></div>
-                <div className="absolute top-full left-0 mt-2 w-56 rounded-xl bg-obsidian border border-panelBorder shadow-xl p-2 z-20">
-                  <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Select Location</div>
-                  {[
-                    '📍 NIT Jamshedpur Campus',
-                    '📍 Adityapur Mall Area',
-                    '📍 Bistupur Market Hub',
-                    '📍 Tatanagar Station Area'
-                  ].map((loc) => (
-                    <button
-                      key={loc}
-                      onClick={() => {
-                        onChangeLocation(loc);
-                        setDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-lavender-deep hover:text-gray-900 transition-colors"
-                    >
-                      {loc}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          {/* Location Picker */}
+          <button 
+            onClick={handleRequestLocation}
+            disabled={locLoading}
+            className="flex items-center gap-1.5 text-xs text-gray-700 hover:text-coral transition-colors max-w-[220px] bg-[#F7F5F0] border border-panelBorder px-3 py-1.5 rounded-full shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
+            title="Click to geolocate your delivery address"
+          >
+            <MapPin className="w-3.5 h-3.5 text-coral flex-shrink-0 animate-pulse" />
+            <span className="font-extrabold truncate max-w-[130px]">
+              {locLoading ? 'Locating...' : (currentLocation === 'Select Location' ? 'Set Location' : currentLocation.replace('📍 ', ''))}
+            </span>
+            <ChevronDown className="w-3 h-3 text-coral" />
+          </button>
         </div>
 
         {/* Center: Search pill with integrated voice microphone */}
@@ -177,31 +237,63 @@ export const Navbar: React.FC<NavbarProps> = ({
           <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-gray-700 mr-2">
             <Link to="/" className={`hover:text-coral transition-colors ${location.pathname === '/' ? 'text-coral' : ''}`}>Home</Link>
             <Link to="/chat" className={`hover:text-coral transition-colors ${location.pathname === '/chat' ? 'text-coral' : ''}`}>AI Pilot</Link>
+            
+            {!isLoggedIn && !adminMode && (
+              <>
+                <Link to="/signup" className={`hover:text-coral transition-colors ${location.pathname === '/signup' ? 'text-coral' : ''}`}>Sign Up</Link>
+                <Link to="/login" className={`hover:text-coral transition-colors ${location.pathname === '/login' ? 'text-coral' : ''}`}>Login</Link>
+              </>
+            )}
+
+            {(isLoggedIn || adminMode) && (
+              <Link to="/account" className={`hover:text-coral transition-colors ${location.pathname === '/account' ? 'text-coral' : ''}`}>Account</Link>
+            )}
+
             {adminMode && (
-              <Link to="/admin" className={`hover:text-coral transition-colors ${location.pathname === '/admin' ? 'text-coral' : ''}`}>Dashboard</Link>
+              <>
+                <Link to="/admin/logs" className={`hover:text-coral transition-colors ${location.pathname.startsWith('/admin') ? 'text-coral' : ''}`}>Logs</Link>
+                <span className="bg-[#5C1324] text-white px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">Admin</span>
+              </>
             )}
           </nav>
 
-          {/* Admin Dashboard Switcher */}
-          <button
-            onClick={() => {
-              const newMode = !adminMode;
-              setAdminMode(newMode);
-              if (newMode) {
-                navigate('/admin');
-              } else {
-                navigate('/');
-              }
-            }}
-            className={`p-3 rounded-xl border flex items-center justify-center transition-all duration-200 group ${
-              location.pathname.startsWith('/admin')
-                ? 'bg-[#C5A880] border-[#C5A880] text-white shadow-lg shadow-[#C5A880]/20'
-                : 'bg-white hover:bg-lavender-deep border-panelBorder text-[#C5A880] hover:text-[#5C1324]'
-            }`}
-            title={adminMode ? "Switch to Storefront" : "Switch to Admin Dashboard"}
-          >
-            {location.pathname.startsWith('/admin') ? <User className="w-5 h-5" /> : <LayoutDashboard className="w-5 h-5 group-hover:scale-110 transition-transform" />}
-          </button>
+          {/* Admin Dashboard Switcher (Hidden when actually logged in as Admin, as it acts automatically) */}
+          {!isLoggedIn && (
+            <button
+              onClick={() => {
+                const newMode = !adminMode;
+                setAdminMode(newMode);
+                if (newMode) {
+                  navigate('/admin/logs');
+                } else {
+                  navigate('/');
+                }
+              }}
+              className={`p-3 rounded-xl border flex items-center justify-center transition-all duration-200 group ${
+                location.pathname.startsWith('/admin')
+                  ? 'bg-[#C5A880] border-[#C5A880] text-white shadow-lg shadow-[#C5A880]/20'
+                  : 'bg-white hover:bg-lavender-deep border-panelBorder text-[#C5A880] hover:text-[#5C1324]'
+              }`}
+              title={adminMode ? "Switch to Storefront" : "Toggle Demo Admin"}
+            >
+              {location.pathname.startsWith('/admin') ? <User className="w-5 h-5" /> : <LayoutDashboard className="w-5 h-5 group-hover:scale-110 transition-transform" />}
+            </button>
+          )}
+
+          {/* Wishlist Icon */}
+          {isLoggedIn && (
+            <Link
+              to="/account"
+              className="relative bg-white hover:bg-lavender-deep border border-panelBorder p-3 rounded-xl flex items-center justify-center transition-all duration-200 group text-[#C5A880] hover:text-[#5C1324]"
+            >
+              <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              {useStore.getState().wishlist.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1.5 rounded-full bg-[#5C1324] border-2 border-[#FAF8F5] flex items-center justify-center text-[10px] font-extrabold text-white">
+                  {useStore.getState().wishlist.length}
+                </span>
+              )}
+            </Link>
+          )}
 
           <button
             onClick={onOpenCart}
