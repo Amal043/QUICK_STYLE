@@ -251,7 +251,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {adminMode && (
               <>
-                <Link to="/admin/logs" className={`hover:text-coral transition-colors ${location.pathname.startsWith('/admin') ? 'text-coral' : ''}`}>Logs</Link>
+                <Link to="/admin/logs" className={`hover:text-coral transition-colors ${location.pathname === '/admin/logs' ? 'text-coral' : ''}`}>Dashboard</Link>
+                <Link to="/admin/brain" className={`hover:text-coral transition-colors ${location.pathname === '/admin/brain' ? 'text-coral' : ''}`}>Agent Brain</Link>
                 <span className="bg-[#5C1324] text-white px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">Admin</span>
               </>
             )}

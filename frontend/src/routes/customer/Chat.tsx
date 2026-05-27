@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Sparkles, Send, User, Zap, Mic, MicOff } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import type { Message, Size } from '../../types';
+import { useAgentLog } from '../../hooks/useAgentLog';
+import AgentStatusBar from '../../components/chat/AgentStatusBar';
+import NegotiationCard from '../../components/chat/NegotiationCard';
 
 const botWelcome = "👋 Welcome to QUICK_STYLE Concierge. I am your personal AI stylist. Need a swift wardrobe change for an unexpected event, spilled coffee, or a night out? Describe your fit requirements below.";
 
@@ -14,6 +17,14 @@ export default function Chat() {
     voiceSearching,
     setVoiceSearching
   } = useStore();
+
+  const {
+    activeAgent,
+    statusText,
+    isProcessing: agentProcessing,
+    negotiations,
+    clearLogs
+  } = useAgentLog('demo-session');
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -35,10 +46,9 @@ export default function Chat() {
   const mapImage = (name: string): string => {
     const n = name.toLowerCase();
     if (n.includes("hoodie")) return "/src/assets/lavender_hoodie.png";
-    if (n.includes("jacket")) return "/src/assets/techwear_jacket.png";
-    if (n.includes("sweater")) return "/src/assets/knit_sweater.png";
-    if (n.includes("tee") || n.includes("shirt")) return "/src/assets/activewear_shirt.png";
-    if (n.includes("blazer")) return "/src/assets/techwear_jacket.png";
+    if (n.includes("jacket") || n.includes("blazer") || n.includes("tote") || n.includes("bag")) return "/src/assets/techwear_jacket.png";
+    if (n.includes("sweater") || n.includes("pants") || n.includes("joggers") || n.includes("trousers") || n.includes("shoes") || n.includes("sneakers") || n.includes("loafers") || n.includes("boots")) return "/src/assets/knit_sweater.png";
+    if (n.includes("tee") || n.includes("shirt") || n.includes("shorts")) return "/src/assets/activewear_shirt.png";
     return "/src/assets/lavender_hoodie.png";
   };
 
@@ -75,6 +85,7 @@ export default function Chat() {
   };
 
   const appendUserMessage = async (text: string) => {
+    clearLogs();
     const userMsg: Message = {
       id: Math.random().toString(),
       sender: 'user',
@@ -106,32 +117,52 @@ export default function Chat() {
 
       let actionNode: React.ReactNode = null;
       if (data.product_recommendations && data.product_recommendations.length > 0) {
-        if (data.product_recommendations.length === 1) {
-          const rec = data.product_recommendations[0];
-          actionNode = (
-            <button
-              onClick={() => handleSelectAndAddToCart(rec, rec.suggested_size as Size)}
-              className="mt-2.5 px-4 py-2.5 rounded-full bg-white hover:bg-gray-100 text-gray-950 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 active:scale-95 shadow-md transition-all border border-panelBorder cursor-pointer"
-            >
-              <Zap className="w-3.5 h-3.5 fill-[#5C1324] text-[#5C1324]" />
-              <span>Select Size {rec.suggested_size} & Add To Bag</span>
-            </button>
-          );
-        } else {
-          actionNode = (
-            <div className="flex flex-wrap gap-2 mt-2">
+        actionNode = (
+          <div className="mt-3 space-y-2 w-full">
+            <p className="text-[10px] uppercase tracking-wider font-extrabold text-[#A27B5C] mb-1.5 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-[#A27B5C]" />
+              <span>Curated Styling Selection</span>
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
               {data.product_recommendations.map((rec: any) => (
-                <button
-                  key={rec.id}
-                  onClick={() => handleSelectAndAddToCart(rec, rec.suggested_size as Size)}
-                  className="px-4 py-2 rounded-full bg-[#5C1324] hover:bg-[#430E1A] text-white text-[10px] font-bold active:scale-95 transition-all cursor-pointer"
-                >
-                  Add {rec.name} ({rec.suggested_size})
-                </button>
+                <div key={rec.id} className="bg-white rounded-2xl border border-panelBorder/60 p-3 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300">
+                  <div>
+                    <div className="relative w-full h-24 bg-[#FAF8F5] rounded-xl overflow-hidden mb-2 border border-panelBorder/30">
+                      <img 
+                        src={mapImage(rec.name)} 
+                        alt={rec.name}
+                        className="w-full h-full object-contain p-2"
+                      />
+                      <span className="absolute top-1.5 right-1.5 bg-[#5C1324] text-white text-[8px] font-bold px-2 py-0.5 rounded-full">
+                        {rec.fit_accuracy}% Fit
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-gray-900 text-[11px] line-clamp-1">{rec.name}</h4>
+                    <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">{rec.brand} • {rec.boutique}</p>
+                    
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <span className="text-[11px] font-bold text-gray-900">₹{rec.price.selling_price}</span>
+                      {rec.price.mrp > rec.price.selling_price && (
+                        <>
+                          <span className="text-[9px] text-gray-400 line-through">₹{rec.price.mrp}</span>
+                          <span className="text-[9px] text-[#A27B5C] font-semibold">-{rec.price.discount_percent}%</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleSelectAndAddToCart(rec, rec.suggested_size as Size)}
+                    className="mt-2.5 w-full py-1.5 rounded-xl bg-[#5C1324] hover:bg-[#430E1A] text-white text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 active:scale-95 shadow-sm transition-all cursor-pointer"
+                  >
+                    <Zap className="w-2.5 h-2.5 fill-white text-white" />
+                    <span>Add to Bag ({rec.suggested_size})</span>
+                  </button>
+                </div>
               ))}
             </div>
-          );
-        }
+          </div>
+        );
       }
 
       const botMsg: Message = {
@@ -293,15 +324,72 @@ export default function Chat() {
           );
         })}
 
-        {isTyping && (
+        {/* Live Multi-Agent Negotiation Card Feed */}
+        {negotiations.length > 0 && (
+          <div className="space-y-3 p-3.5 bg-[#F5F1E8]/40 rounded-2xl border border-panelBorder/65 max-w-[85%] animate-fade-in">
+            <p className="text-[9px] uppercase tracking-wider font-extrabold text-[#5C1324] mb-1 flex items-center gap-1.5">
+              <Zap className="w-3 h-3 text-[#5C1324] fill-[#5C1324]" />
+              <span>Real-Time Fit Negotiation</span>
+            </p>
+            {negotiations.map((neg, idx) => (
+              <div key={idx} className="bg-white border border-panelBorder/50 rounded-xl p-3 text-xs shadow-sm">
+                <div className="flex justify-between items-center border-b border-panelBorder/30 pb-1.5 mb-2 font-bold text-gray-800">
+                  <span>Round {neg.round}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                    neg.resolution === 'approved' ? 'bg-emerald/10 text-emerald' : 'bg-coral/10 text-coral'
+                  }`}>
+                    {neg.resolution.toUpperCase()}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-[11px] text-gray-700">
+                  {neg.productName && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Stylist Proposal:</span>
+                      <span className="font-semibold">{neg.productName} ({neg.stylistConfidence})</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Anti-Return Check:</span>
+                    <span className={neg.antiReturnObjection ? "text-coral font-bold" : "text-emerald font-bold"}>
+                      {neg.antiReturnObjection ? "Objection Raised" : "Approved"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Adjusted Match:</span>
+                    <span className="font-mono">{neg.adjustedConfidence}</span>
+                  </div>
+                  {neg.evidence && neg.evidence.length > 0 && (
+                    <div className="mt-1.5 pt-1.5 border-t border-panelBorder/20 text-[10px] text-coral/80 bg-coral/5 p-1.5 rounded">
+                      <p className="font-bold uppercase tracking-wider text-[8px] mb-0.5">Objection Evidence:</p>
+                      <ul className="list-disc list-inside space-y-0.5">
+                        {neg.evidence.map((ev: string, i: number) => (
+                          <li key={i}>{ev}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {(isTyping || agentProcessing) && (
           <div className="flex gap-2.5 max-w-[85%] items-start animate-fade-in">
             <div className="w-7 h-7 rounded-lg bg-lavender-deep border border-panelBorder flex items-center justify-center flex-shrink-0 text-coral">
               <Bot className="w-3.5 h-3.5" />
             </div>
-            <div className="bg-[#F5F1E8] border border-panelBorder/60 rounded-2xl rounded-tl-none p-3.5 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-coral animate-bounce" style={{ animationDelay: '0.1s' }}></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-coral animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-coral animate-bounce" style={{ animationDelay: '0.3s' }}></span>
+            <div className="bg-[#F5F1E8] border border-panelBorder/60 rounded-2xl rounded-tl-none p-3.5 flex flex-col gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-coral animate-bounce" style={{ animationDelay: '0.1s' }}></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-coral animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-coral animate-bounce" style={{ animationDelay: '0.3s' }}></span>
+              </div>
+              {agentProcessing && activeAgent && (
+                <div className="text-[10px] text-gray-500 font-mono">
+                  ⚡ <strong className="text-[#5C1324]">{activeAgent}</strong>: {statusText}
+                </div>
+              )}
             </div>
           </div>
         )}

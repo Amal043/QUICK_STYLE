@@ -34,7 +34,7 @@ async def stylist_node(state: dict) -> dict:
 
     # Search — exclude rejected brands in filter
     results = await hybrid_search(
-        query=entities.get("raw_query", ""),
+        query=entities.get("search_keywords") or entities.get("raw_query", ""),
         location=state.get("user_location"),
         filters={
             "size": entities.get("size"),

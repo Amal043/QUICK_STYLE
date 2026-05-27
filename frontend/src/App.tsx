@@ -17,6 +17,8 @@ import Account from './routes/customer/Account';
 import Signup from './routes/customer/Signup';
 import Login from './routes/customer/Login';
 import AdminDashboard from './routes/admin/Dashboard';
+import AgentBrain from './routes/admin/AgentBrain';
+
 
 const queryClient = new QueryClient();
 
@@ -95,6 +97,8 @@ function AppShell() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin/logs" element={<AdminDashboard />} />
+          <Route path="/admin/brain" element={<AgentBrain />} />
+
         </Routes>
       </main>
 

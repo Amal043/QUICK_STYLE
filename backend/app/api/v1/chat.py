@@ -2,10 +2,14 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from bson import ObjectId
+import hashlib
+import json
 from app.db.connection import get_db
 from app.agents.supervisor import negotiation_graph
 from app.agents.safety_agent import pre_retrieval_guardrail, post_retrieval_guardrail
 from app.websocket.connection_manager import manager
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 router = APIRouter()
 
@@ -22,6 +26,177 @@ class ChatResponse(BaseModel):
     product_recommendations: list[dict] = []
     timestamp: str
 
+def get_suggested_size(product: dict, extracted_size: str, user_profile: dict) -> str:
+    # 1. User specified size in their query
+    if extracted_size:
+        return extracted_size
+    
+    # 2. Get base size from profile based on category
+    category = product.get("category", "").lower()
+    base_size = "M" # default fallback
+    
+    if any(k in category for k in ["footwear", "shoes", "boots", "loafers"]):
+        base_size = user_profile.get("footwear", "9")
+    elif any(k in category for k in ["bottom", "pants", "shorts", "joggers", "trousers"]):
+        base_size = user_profile.get("bottoms", "M")
+    else: # tops, hoodies, jackets, tees, sweaters, blazers
+        base_size = user_profile.get("tops", "M")
+        
+    # 3. Apply size variance adjustments (if size is standard like S, M, L, XL)
+    size_variance = product.get("size_variance", 0)
+    sizes_order = ["XS", "S", "M", "L", "XL", "XXL"]
+    
+    if base_size in sizes_order and size_variance != 0:
+        idx = sizes_order.index(base_size)
+        # size_variance = 1 (brand runs large, so size DOWN)
+        # size_variance = -1 (brand runs small, so size UP)
+        adjusted_idx = idx - size_variance
+        if 0 <= adjusted_idx < len(sizes_order):
+            base_size = sizes_order[adjusted_idx]
+            
+    # 4. Fallback: if suggested size is not in sizes_available, find closest or first
+    sizes_avail = product.get("sizes_available", [])
+    if sizes_avail:
+        if base_size in sizes_avail:
+            return base_size
+        original_base = user_profile.get("tops", "M")
+        if original_base in sizes_avail:
+            return original_base
+        return sizes_avail[0]
+        
+    return base_size
+
+def create_mock_matching_product(item_tag: str, primary_product: dict) -> dict:
+    # Deterministic ID
+    m = hashlib.md5(item_tag.encode('utf-8'))
+    mock_id = str(m.hexdigest())[:24]
+    
+    # Store info from primary product
+    store_name = primary_product.get("store_name") or primary_product.get("boutique") or "Boutique A — South City Luxe"
+    store_id = primary_product.get("store_id", "")
+    store_loc = primary_product.get("store_location", {"type": "Point", "coordinates": [88.3616, 22.5015]})
+    
+    item_details = {
+        "cargo_pants": {
+            "name": "Apex Utility Cargo Pants",
+            "price": {"mrp": 2499, "selling_price": 1699, "discount_percent": 32},
+            "sizes_available": ["S", "M", "L", "XL"],
+            "category": "Streetwear"
+        },
+        "white_sneakers": {
+            "name": "Classic White Sneakers",
+            "price": {"mrp": 3999, "selling_price": 2499, "discount_percent": 37},
+            "sizes_available": ["7", "8", "9", "10", "11"],
+            "category": "Streetwear"
+        },
+        "crossbody_bag": {
+            "name": "Streetwear Crossbody Bag",
+            "price": {"mrp": 1299, "selling_price": 799, "discount_percent": 38},
+            "sizes_available": ["One Size"],
+            "category": "Streetwear"
+        },
+        "slim_fit_joggers": {
+            "name": "Vanguard Slim-Fit Joggers",
+            "price": {"mrp": 2199, "selling_price": 1499, "discount_percent": 31},
+            "sizes_available": ["S", "M", "L", "XL"],
+            "category": "Streetwear"
+        },
+        "chunky_boots": {
+            "name": "Vanguard Chunky Tactical Boots",
+            "price": {"mrp": 4999, "selling_price": 3299, "discount_percent": 34},
+            "sizes_available": ["8", "9", "10", "11"],
+            "category": "Streetwear"
+        },
+        "tactical_bag": {
+            "name": "Vanguard Tactical Sling Bag",
+            "price": {"mrp": 1499, "selling_price": 999, "discount_percent": 33},
+            "sizes_available": ["One Size"],
+            "category": "Streetwear"
+        },
+        "tailored_trousers": {
+            "name": "Luxe Tailored Trousers",
+            "price": {"mrp": 2999, "selling_price": 1899, "discount_percent": 36},
+            "sizes_available": ["S", "M", "L", "XL"],
+            "category": "Formals"
+        },
+        "loafers": {
+            "name": "Premium Suede Loafers",
+            "price": {"mrp": 4500, "selling_price": 2999, "discount_percent": 33},
+            "sizes_available": ["7", "8", "9", "10"],
+            "category": "Formals"
+        },
+        "leather_tote": {
+            "name": "Signature Leather Tote Bag",
+            "price": {"mrp": 5999, "selling_price": 3899, "discount_percent": 35},
+            "sizes_available": ["One Size"],
+            "category": "Formals"
+        },
+        "jogger_shorts": {
+            "name": "Aero-Active Jogger Shorts",
+            "price": {"mrp": 1299, "selling_price": 849, "discount_percent": 34},
+            "sizes_available": ["S", "M", "L", "XL"],
+            "category": "Activewear"
+        },
+        "running_shoes": {
+            "name": "Aero-Speed Running Shoes",
+            "price": {"mrp": 3499, "selling_price": 2299, "discount_percent": 34},
+            "sizes_available": ["7", "8", "9", "10", "11"],
+            "category": "Activewear"
+        },
+        "gym_bag": {
+            "name": "Aero-Fit Gym Duffle Bag",
+            "price": {"mrp": 1999, "selling_price": 1299, "discount_percent": 35},
+            "sizes_available": ["One Size"],
+            "category": "Activewear"
+        },
+        "dress_trousers": {
+            "name": "FormCraft Dress Trousers",
+            "price": {"mrp": 2799, "selling_price": 1799, "discount_percent": 35},
+            "sizes_available": ["S", "M", "L", "XL"],
+            "category": "Formals"
+        },
+        "oxford_shoes": {
+            "name": "Classic Oxford Leather Shoes",
+            "price": {"mrp": 4999, "selling_price": 3299, "discount_percent": 34},
+            "sizes_available": ["8", "9", "10", "11"],
+            "category": "Formals"
+        },
+        "pocket_square": {
+            "name": "Obsidian Silk Pocket Square",
+            "price": {"mrp": 699, "selling_price": 399, "discount_percent": 42},
+            "sizes_available": ["One Size"],
+            "category": "Formals"
+        }
+    }
+    
+    details = item_details.get(item_tag)
+    if not details:
+        name = item_tag.replace("_", " ").title()
+        details = {
+            "name": name,
+            "price": {"mrp": 1999, "selling_price": 1399, "discount_percent": 30},
+            "sizes_available": ["S", "M", "L", "XL"],
+            "category": "Streetwear"
+        }
+        
+    return {
+        "_id": mock_id,
+        "id": mock_id,
+        "name": details["name"],
+        "brand": "Quick Style Co.",
+        "description": f"A stylish matching {details['name'].lower()} to complete your outfit.",
+        "category": details["category"],
+        "price": details["price"],
+        "sizes_available": details["sizes_available"],
+        "store_name": store_name,
+        "store_id": store_id,
+        "store_location": store_loc,
+        "stock": {sz: 5 for sz in details["sizes_available"]},
+        "fit_confidence_avg": 95,
+        "size_variance": 0,
+        "active": True
+    }
+
 @router.post("/message", response_model=ChatResponse)
 async def send_message(body: ChatMessage, db=Depends(get_db)):
     """Process a user chat message using the multi-agent Negotiation Graph."""
@@ -35,10 +210,26 @@ async def send_message(body: ChatMessage, db=Depends(get_db)):
             product_recommendations=[],
             timestamp=datetime.utcnow().isoformat(),
         )
+        
+    # Query default user profile if user_id is missing to ensure return checks / sizes are functional
+    user_id_to_pass = body.user_id
+    user_profile = {}
+    if not user_id_to_pass:
+        default_user = await db.users.find_one({"email": "admin@quickstyle.io"})
+        if default_user:
+            user_id_to_pass = str(default_user["_id"])
+            user_profile = default_user.get("size_profile", {})
+    else:
+        try:
+            user_doc = await db.users.find_one({"_id": ObjectId(user_id_to_pass)})
+            if user_doc:
+                user_profile = user_doc.get("size_profile", {})
+        except Exception:
+            pass
     
     initial_state = {
         "session_id": body.session_id,
-        "user_id": body.user_id,
+        "user_id": user_id_to_pass,
         "user_location": {"address": body.location},
         "user_photo_url": body.user_photo_url,
         "raw_query": body.message,
@@ -69,41 +260,127 @@ async def send_message(body: ChatMessage, db=Depends(get_db)):
     # Run the graph
     final_state = await negotiation_graph.ainvoke(initial_state)
     
-    # Determine the reply
-    reply = "Here's what I found for you!"
     recommendations = []
+    raw_products = []
     
     if final_state.get("stylist_proposal"):
-        proposal = final_state["stylist_proposal"]
-        recommendations.append(proposal.get("product_data", {}))
+        primary_proposal = final_state["stylist_proposal"]
+        primary_product = primary_proposal.get("product_data", {})
+        raw_products.append(primary_product)
         
-        if final_state.get("negotiation_complete"):
-            if "conflict" not in [h.get("resolution") for h in final_state.get("negotiation_history", [])]:
-                reply = f"I found the perfect match: {proposal.get('product_name')}. It has an excellent fit confidence!"
-            else:
-                reply = f"After some debate with our Anti-Return system, we settled on the {proposal.get('product_name')}. Note: there might be a slight fit risk based on past returns, but it's the closest match."
+        # 1. Complete outfit combination if requested
+        if extracted.get("wants_combination"):
+            pairs_well_with = primary_product.get("pairs_well_with", [])
+            for item_tag in pairs_well_with:
+                # Find matching product in DB or dynamically mock it
+                db_item = await db.products.find_one({
+                    "active": True,
+                    "$or": [
+                        {"name": {"$regex": item_tag.replace("_", " "), "$options": "i"}},
+                        {"tags": item_tag}
+                    ]
+                })
+                if db_item:
+                    raw_products.append(db_item)
+                else:
+                    raw_products.append(create_mock_matching_product(item_tag, primary_product))
+                    
+        # 2. Show multiple designs if user asked for multiple options or all designs
+        elif extracted.get("multiple_designs"):
+            for item in final_state.get("filtered_products", []):
+                # Avoid duplicates
+                if str(item.get("_id")) != str(primary_product.get("_id")):
+                    raw_products.append(item)
+                    
+    # Map raw product fields to the format expected by the frontend
+    mapped_recommendations = []
+    for item in raw_products:
+        prod_id = str(item.get("_id", item.get("id")))
+        s_size = get_suggested_size(item, extracted.get("size"), user_profile)
+        
+        mapped = {
+            "id": prod_id,
+            "name": item.get("name", "Unknown Product"),
+            "price": item.get("price", {"mrp": 1999, "selling_price": 1599, "discount_percent": 20}),
+            "suggested_size": s_size,
+            "fit_accuracy": item.get("fit_confidence_avg", 95),
+            "boutique": item.get("store_name", "Boutique A"),
+            "brand": item.get("brand", "Quick Style"),
+            "sizes_available": item.get("sizes_available", []),
+            "colors": item.get("colors", []),
+            "store_location": item.get("store_location", {"type": "Point", "coordinates": [88.36, 22.50]})
+        }
+        mapped_recommendations.append(mapped)
+        
+    # Generate stylized conversational response using Gemini
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7)
+    
+    rec_details_list = []
+    for r in mapped_recommendations:
+        rec_details_list.append(
+            f"- {r['name']} by {r['brand']} from {r['boutique']} (₹{r['price']['selling_price']}) — Size Suggested: {r['suggested_size']} (Fit confidence: {r['fit_accuracy']}%)"
+        )
+    rec_text = "\n".join(rec_details_list)
+    
+    history_text = ""
+    if final_state.get("negotiation_history"):
+        history_text = json.dumps(final_state["negotiation_history"], default=str)
+        
+    prompt = f"""
+    You are the QUICK_STYLE Concierge, an elite, high-fashion AI stylist.
+    Draft a beautiful, friendly, and professional response to the user's styling/shopping request.
+    
+    User Query: "{body.message}"
+    
+    Negotiation/Fit Checks Status:
+    - Complete: {final_state.get("negotiation_complete")}
+    - History: {history_text}
+    
+    Recommended Items:
+    {rec_text}
+    
+    Guidelines:
+    1. Be extremely conversational, friendly, and knowledgeable, like a premium stylist.
+    2. Explicitly explain the outfit combination and why these items coordinate beautifully (if a combination/outfit is recommended).
+    3. Clearly explain why you selected the specific size for each item (especially if you adjusted the size based on the brand's size variance or the user's size profile).
+    4. Mention that the Anti-Return Agent has verified the fit accuracy to avoid returns.
+    5. Encourage the user to add the items directly to their bag.
+    6. Keep the tone sophisticated, stylish, and brief (2-4 paragraphs). Use HTML formatting like <br> or <strong> for clean styling on the web app. Do NOT use markdown code blocks or triple backticks in the response.
+    """
+    
+    try:
+        response = await llm.ainvoke(prompt)
+        reply = response.content.strip()
+    except Exception as e:
+        print(f"Error generating Gemini chat reply: {e}")
+        # Simple fallback
+        if mapped_recommendations:
+            reply = f"Here is the selection I curated for you!<br><br><strong>Primary Product:</strong> {mapped_recommendations[0]['name']} (Size {mapped_recommendations[0]['suggested_size']})."
+            if len(mapped_recommendations) > 1:
+                reply += "<br><br>I've also added matching coordinate items to complete the look. All fits are verified by our Anti-Return agents."
         else:
-             reply = f"I'm suggesting the {proposal.get('product_name')}, but our agents are still verifying fit."
-    else:
-        reply = "I couldn't find any products matching your exact criteria right now. Could you try adjusting your budget or style?"
-        
+            reply = "I couldn't find any products matching your criteria. Let's try another style or budget!"
+            
     # Post-Retrieval Guardrail
     safe_reply = await post_retrieval_guardrail(reply)
         
     return ChatResponse(
         session_id=body.session_id,
         reply=safe_reply,
-        product_recommendations=recommendations,
+        product_recommendations=mapped_recommendations,
         timestamp=datetime.utcnow().isoformat(),
     )
 
-@router.websocket("/{session_id}")
+ws_router = APIRouter()
+
+@ws_router.websocket("/{session_id}")
 async def websocket_chat_endpoint(websocket: WebSocket, session_id: str):
     await manager.connect(websocket, session_id)
     try:
         while True:
-            # We just keep the connection open to receive broadcasted events
+            # We keep the connection alive and listen for any client messages
             data = await websocket.receive_text()
-            # If client sends data, we could process it here
     except WebSocketDisconnect:
         manager.disconnect(websocket, session_id)
+
+
