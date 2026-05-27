@@ -151,9 +151,9 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
                   </div>
                   <h3 className="font-semibold text-xs text-gray-900 truncate">{product.name}</h3>
                   <div className="flex items-baseline gap-2 pt-0.5">
-                    <span className="text-sm font-extrabold text-gray-900">${product.price.toFixed(2)}</span>
-                    <span className="text-[10px] text-gray-400 line-through">${(product.price * 1.3).toFixed(2)}</span>
-                    <span className="text-[10px] text-emerald-600 font-bold">30% OFF</span>
+                    <span className="text-sm font-extrabold text-gray-900">₹{product.price.selling_price}</span>
+                    <span className="text-[10px] text-gray-400 line-through">₹{product.price.mrp}</span>
+                    <span className="text-[10px] text-emerald-600 font-bold">{product.price.discount_percent}% OFF</span>
                   </div>
                   <div className="pt-2 flex items-center gap-2">
                     <button
@@ -226,7 +226,6 @@ export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) 
               <span className="mx-2 text-gray-300">|</span>
               <Zap className="w-3.5 h-3.5 text-coral fill-coral/10" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#C5A880]">LIVE INVENTORY • LOCAL STOCKS</span>
-            </div>
             </div>
             <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight font-jakarta flex items-center gap-3">
               Top Picks For You
