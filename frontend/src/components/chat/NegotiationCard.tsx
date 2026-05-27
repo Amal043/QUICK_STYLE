@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ShieldAlert, CheckCircle, Scale } from 'lucide-react';
 
 interface NegotiationCardProps {
-  round: int;
+  round: number;
   productName: string;
   stylistConfidence: string;
   antiReturnObjection: boolean;

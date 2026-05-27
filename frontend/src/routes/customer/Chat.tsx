@@ -48,17 +48,29 @@ export default function Chat() {
       addToCart({
         id: recProduct.id,
         name: recProduct.name,
-        price: recProduct.price,
+        price: recProduct.price || { mrp: 1999, selling_price: 1599, discount_percent: 20 },
         image: mapImage(recProduct.name),
+        gallery: [],
+        frames_365: [], // mapped fields
+        frames_360: [],
+        has_360: false,
         category: recProduct.name.includes("Knit") ? 'Loungewear' : recProduct.name.includes("Tee") ? 'Activewear' : recProduct.name.includes("Blazer") ? 'Formals' : 'Streetwear',
+        subcategory: '',
+        brand: recProduct.boutique || 'Quick Style',
+        gender: 'unisex',
         boutique: recProduct.boutique,
+        store_name: recProduct.boutique,
+        store_location: { type: 'Point', coordinates: [86.14, 22.80] },
         distance: 1.0,
-        fitAccuracy: recProduct.fit_accuracy,
-        stock: 5,
-        rating: 4.8,
-        reviewsCount: 120,
-        description: ''
-      }, size);
+        delivery_eta: 12,
+        fitAccuracy: recProduct.fit_accuracy || 95,
+        stock: { [size]: 5 },
+        description: '',
+        rating: { average: 4.8, count: 120 },
+        colors: [],
+        sizes_available: [size],
+        tags: []
+      } as any, size);
     }, 100);
   };
 

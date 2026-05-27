@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Zap, MapPin, Search, ShoppingBag, ChevronDown, Mic, MicOff, LayoutDashboard, User, Heart } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { getPreciseLocation } from '../../lib/geolocation';
 
 interface NavbarProps {
   cartCount: number;
@@ -30,9 +31,93 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [fade, setFade] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const [locLoading, setLocLoading] = useState(false);
 
   // Zustand Store binding
-  const { adminMode, setAdminMode, voiceSearching, setVoiceSearching, isLoggedIn, setIsLoggedIn } = useStore();
+  const { 
+    adminMode, 
+    setAdminMode, 
+    voiceSearching, 
+    setVoiceSearching, 
+    isLoggedIn, 
+    setIsLoggedIn,
+    setLocation,
+    setUserCoords
+  } = useStore();
+
+  const handleRequestLocation = () => {
+    setLocLoading(true);
+    
+    getPreciseLocation(
+      async (coords) => {
+        const { lat, lng } = coords;
+        setUserCoords({ lat, lng });
+
+        // Nominatim reverse geocode
+        try {
+          const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
+            headers: { 'Accept-Language': 'en' }
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.address) {
+              const addr = data.address;
+              const placeName = addr.suburb || addr.neighbourhood || addr.city_district || addr.city || addr.town || addr.village || "";
+              const stateName = addr.state || "";
+              const formatted = placeName ? `📍 ${placeName}, ${stateName}` : `📍 ${data.display_name.split(',')[0]}, ${stateName}`;
+              setLocation(formatted);
+              setLocLoading(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+
+        // Fallback to IP address city names
+        try {
+          const resp = await fetch('https://freeipapi.com/api/json');
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.cityName && data.regionName) {
+              setLocation(`📍 ${data.cityName}, ${data.regionName}`);
+              setLocLoading(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+
+        // Local coordinates region check
+        const isKolkata = Math.abs(lat - 22.5) < 0.5 && Math.abs(lng - 88.3) < 0.5;
+        setLocation(isKolkata ? '📍 Kolkata, West Bengal' : '📍 Jamshedpur, Jharkhand');
+        setLocLoading(false);
+      },
+      async (error) => {
+        console.warn("[GEOLOCATION] Navbar geolocation error:", error);
+        try {
+          const resp = await fetch('https://freeipapi.com/api/json');
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.cityName && data.regionName) {
+              setLocation(`📍 ${data.cityName}, ${data.regionName}`);
+              const fallbackLat = data.latitude || 22.4981;
+              const fallbackLng = data.longitude || 88.3653;
+              setUserCoords({ lat: fallbackLat, lng: fallbackLng });
+              setLocLoading(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+        setLocation('📍 Kolkata, West Bengal');
+        setUserCoords({ lat: 22.4981, lng: 88.3653 });
+        setLocLoading(false);
+      }
+    );
+  };
 
   // Cycling search placeholder animation
   useEffect(() => {
@@ -103,7 +188,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </Link>
 
-          {/* Location dropdown removed as per request */}
+          {/* Location Picker */}
+          <button 
+            onClick={handleRequestLocation}
+            disabled={locLoading}
+            className="flex items-center gap-1.5 text-xs text-gray-700 hover:text-coral transition-colors max-w-[220px] bg-[#F7F5F0] border border-panelBorder px-3 py-1.5 rounded-full shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
+            title="Click to geolocate your delivery address"
+          >
+            <MapPin className="w-3.5 h-3.5 text-coral flex-shrink-0 animate-pulse" />
+            <span className="font-extrabold truncate max-w-[130px]">
+              {locLoading ? 'Locating...' : (currentLocation === 'Select Location' ? 'Set Location' : currentLocation.replace('📍 ', ''))}
+            </span>
+            <ChevronDown className="w-3 h-3 text-coral" />
+          </button>
         </div>
 
         {/* Center: Search pill with integrated voice microphone */}

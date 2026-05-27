@@ -2,20 +2,20 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useDrag } from '@use-gesture/react';
 import { X, RotateCw, HelpCircle, Share2, Heart, Tag, Truck, ShieldCheck, ChevronRight, Check, ShoppingBag, MapPin, Zap } from 'lucide-react';
-import type { Product } from '../../types';
+import type { Product, Size } from '../../types';
 import { useStore } from '../../store/useStore';
 
 interface ProductDetailsProps {
   product: Product | null;
   onClose: () => void;
-  onAddToCart: (product: Product, size: string) => void;
+  onAddToCart: (product: Product, size: Size) => void;
 }
 
 export const ProductDetails: React.FC<ProductDetailsProps> = ({ product, onClose, onAddToCart }) => {
   if (!product) return null;
 
   const { wishlist, toggleWishlist, userProfile } = useStore();
-  const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedSize, setSelectedSize] = useState<Size | ''>('');
   const [frameIndex, setFrameIndex] = useState(0);
 
   // Use frames_360 if available, else gallery, else fallback to main image
@@ -70,7 +70,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product, onClose
             <Heart className={`w-6 h-6 transition-transform group-hover:scale-110 ${isWished ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
           </button>
 
-          <div {...(bind() as any)} className="flex-1 flex flex-col items-center justify-center relative cursor-grab active:cursor-grabbing group select-none">
+          <div {...((bind as any)())} className="flex-1 flex flex-col items-center justify-center relative cursor-grab active:cursor-grabbing group select-none">
             {hasMultipleFrames && product.has_360 && (
               <div className="absolute top-2 left-2 z-20 text-[10px] bg-black/50 text-white px-2 py-1 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
                 <RotateCw className="w-3 h-3" /> Drag to View 360°
@@ -145,7 +145,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product, onClose
                   <button
                     key={size}
                     disabled={!inStock}
-                    onClick={() => setSelectedSize(size)}
+                    onClick={() => setSelectedSize(size as Size)}
                     className={`min-w-[48px] h-[48px] border-2 rounded flex items-center justify-center font-semibold transition-colors
                       ${selectedSize === size ? 'border-blue-600 text-blue-600' : 'border-gray-200 text-gray-800 hover:border-blue-400'}
                       ${!inStock ? 'opacity-40 bg-gray-50 border-gray-100 cursor-not-allowed line-through' : ''}`}

@@ -71,8 +71,37 @@ async def tracking_websocket(websocket: WebSocket, order_id: str):
     # 2. Fetch User (Mocking with Admin User for Demo)
     # (In a real app, query `orders` collection. Here we hardcode to the seeded Kolkata data for demo)
     
+    query_params = websocket.query_params
+    lat_param = query_params.get("lat")
+    lng_param = query_params.get("lng")
+    store_lat_param = query_params.get("store_lat")
+    store_lng_param = query_params.get("store_lng")
+    
     store_coords = [88.3616, 22.5015] # South City Luxe
-    user_coords = [88.3653, 22.4981] # Jadavpur User
+    
+    if lat_param and lng_param:
+        try:
+            user_coords = [float(lng_param), float(lat_param)]
+            print(f"[TRACKING] Using client geolocated coordinates: {user_coords}")
+            
+            # Check if store coordinates are provided by client
+            if store_lat_param and store_lng_param:
+                store_coords = [float(store_lng_param), float(store_lat_param)]
+                print(f"[TRACKING] Using client-provided store coordinates: {store_coords}")
+            else:
+                # If coordinates are far away from Kolkata, let's also mock the store_coords
+                # to be closer to the user so that the routing and distance look realistic!
+                lat_diff = abs(user_coords[1] - 22.50)
+                lng_diff = abs(user_coords[0] - 88.36)
+                if lat_diff > 0.5 or lng_diff > 0.5:
+                    # Place store ~1.2 km north-west of the user
+                    store_coords = [user_coords[0] - 0.01, user_coords[1] + 0.008]
+                    print(f"[TRACKING] Client is outside Kolkata. Adjusting store_coords to be nearby: {store_coords}")
+        except Exception as err:
+            print(f"[TRACKING] Error parsing query params: {err}")
+            user_coords = [88.3653, 22.4981] # Jadavpur User
+    else:
+        user_coords = [88.3653, 22.4981] # Jadavpur User
     
     try:
         # Find Nearest Delivery Partner to Store

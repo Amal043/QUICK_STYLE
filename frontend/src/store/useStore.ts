@@ -18,6 +18,7 @@ interface AppState {
   wishlist: string[];
   userProfile: any;
   activeOrderId: string | null;
+  userCoords: { lat: number; lng: number } | null;
   
   // Actions
   addToCart: (product: Product, size: Size) => void;
@@ -39,12 +40,13 @@ interface AppState {
   toggleWishlist: (productId: string) => void;
   setUserProfile: (profile: any) => void;
   setActiveOrderId: (orderId: string | null) => void;
+  setUserCoords: (coords: { lat: number; lng: number } | null) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
   cart: [],
   selectedSizes: {},
-  currentLocation: '📍 Jadavpur, Kolkata',
+  currentLocation: 'Select Location',
   activeCategory: 'All',
   sizingProduct: null,
   cartOpen: false,
@@ -58,6 +60,7 @@ export const useStore = create<AppState>((set) => ({
   wishlist: [],
   userProfile: null,
   activeOrderId: null,
+  userCoords: null,
 
   addToCart: (product, size) => set((state) => {
     const existingIndex = state.cart.findIndex(
@@ -132,4 +135,6 @@ export const useStore = create<AppState>((set) => ({
   setUserProfile: (profile) => set({ userProfile: profile }),
 
   setActiveOrderId: (orderId) => set({ activeOrderId: orderId }),
+
+  setUserCoords: (coords) => set({ userCoords: coords }),
 }));
