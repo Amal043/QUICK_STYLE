@@ -5,12 +5,12 @@ import { Navbar } from './components/layout/Navbar';
 import { CartDrawer } from './components/CartDrawer';
 import { SizingModal } from './components/SizingModal';
 
-import { ProductDetails } from './components/product/ProductDetails';
 import { useStore } from './store/useStore';
-import type { Product } from './types';
-import { Zap } from 'lucide-react';
+import type { Product, Size } from './types';
 
 import Home from './routes/customer/Home';
+import Collection from './routes/customer/Collection';
+import ProductDetailsPage from './routes/customer/ProductDetailsPage';
 import Chat from './routes/customer/Chat';
 import OrderStatus from './routes/customer/OrderStatus';
 import Account from './routes/customer/Account';
@@ -46,8 +46,6 @@ function AppShell() {
   } = useStore();
   const navigate = useNavigate();
 
-  const [viewer360Product, setViewer360Product] = useState<Product | null>(null);
-
   const handleLocationChange = (loc: string) => {
     setLocation(loc);
   };
@@ -70,7 +68,7 @@ function AppShell() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="text-gray-900 min-h-screen relative overflow-x-hidden selection:bg-coral selection:text-white bg-[#FAF8F5]">
+    <div className="text-on-surface min-h-screen relative overflow-x-hidden selection:bg-primary selection:text-surface bg-background">
       {/* Sticky Navbar */}
       <Navbar
         cartCount={cartCount}
@@ -80,17 +78,18 @@ function AppShell() {
       />
 
       {/* Main Content with Routes */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full">
         <Routes>
           <Route
             path="/"
             element={
               <Home
                 onOpenSizingGuide={setSizingProduct}
-                onOpen360Viewer={setViewer360Product}
               />
             }
           />
+          <Route path="/collection" element={<Collection />} />
+          <Route path="/product/:id" element={<ProductDetailsPage />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/order-status" element={<OrderStatus />} />
           <Route path="/account" element={<Account />} />
@@ -102,43 +101,51 @@ function AppShell() {
         </Routes>
       </main>
 
-      {/* Premium Footer */}
-      <footer className="border-t border-panelBorder/50 bg-gradient-to-b from-transparent to-[#F5F1E8]/30 py-12 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* Brand mark */}
-            <div className="flex items-center gap-3">
-              <div className="bg-[#C5A880]/15 border border-[#C5A880]/30 rounded-xl p-2 flex items-center justify-center text-[#C5A880]">
-                <Zap className="w-4 h-4 fill-[#C5A880] text-[#C5A880]" />
-              </div>
-              <div>
-                <span className="font-extrabold text-base text-gray-900 font-jakarta">
-                  QUICK_<span className="text-coral">STYLE</span>
-                </span>
-                <p className="text-[10px] text-gray-500 mt-0.5">
-                  Hyperlocal Fashion · Zero Inventory · AI Driven
-                </p>
-              </div>
+      {/* Premium Zevana Footer */}
+      <footer className="border-t border-outline-variant/20 py-16 mt-0">
+        <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+            {/* Brand */}
+            <div className="md:col-span-1">
+              <h3 className="font-display-md text-display-md text-on-surface mb-4">ZEVANA</h3>
+              <p className="font-body-base text-sm text-on-surface-variant leading-relaxed">
+                Hyperlocal fashion marketplace. AI-powered styling. 12-minute scooter delivery.
+              </p>
             </div>
 
-            {/* Tagline */}
-            <p className="text-xs text-gray-500 text-center md:text-left max-w-sm leading-relaxed">
-              Bridging local boutiques and modern shoppers through AI-powered fit calibration, 
-              real-time inventory, and 12-minute scooter delivery.
-            </p>
+            {/* Navigation */}
+            <div>
+              <h4 className="font-label-caps text-label-caps text-on-surface-variant mb-4 uppercase tracking-widest">Navigate</h4>
+              <ul className="space-y-3 font-body-base text-sm text-on-surface-variant">
+                <li><a href="/" className="hover:text-on-surface transition-colors">Collections</a></li>
+                <li><a href="/chat" className="hover:text-on-surface transition-colors">AI Stylist</a></li>
+                <li><a href="/account" className="hover:text-on-surface transition-colors">Account</a></li>
+              </ul>
+            </div>
 
-            {/* Footer links */}
-            <nav className="flex flex-wrap gap-5 text-xs font-medium text-gray-500 justify-center">
-              <a href="#" className="hover:text-coral transition-colors duration-200">Privacy Policy</a>
-              <a href="#" className="hover:text-coral transition-colors duration-200">Terms of Service</a>
-              <a href="#" className="hover:text-coral transition-colors duration-200">Boutique Sign Up</a>
-              <a href="#" className="hover:text-coral transition-colors duration-200">Courier Partner</a>
-            </nav>
+            {/* Legal */}
+            <div>
+              <h4 className="font-label-caps text-label-caps text-on-surface-variant mb-4 uppercase tracking-widest">Legal</h4>
+              <ul className="space-y-3 font-body-base text-sm text-on-surface-variant">
+                <li><a href="#" className="hover:text-on-surface transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-on-surface transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-on-surface transition-colors">Cookie Settings</a></li>
+              </ul>
+            </div>
+
+            {/* Partner */}
+            <div>
+              <h4 className="font-label-caps text-label-caps text-on-surface-variant mb-4 uppercase tracking-widest">Partner</h4>
+              <ul className="space-y-3 font-body-base text-sm text-on-surface-variant">
+                <li><a href="#" className="hover:text-on-surface transition-colors">Boutique Sign Up</a></li>
+                <li><a href="#" className="hover:text-on-surface transition-colors">Courier Partner</a></li>
+              </ul>
+            </div>
           </div>
 
           {/* Bottom bar */}
-          <div className="mt-8 pt-6 border-t border-panelBorder/40 flex flex-col md:flex-row items-center justify-between gap-3 text-[10px] text-gray-400">
-            <span>© 2026 QUICK_STYLE. All rights reserved.</span>
+          <div className="mt-12 pt-8 border-t border-outline-variant/20 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-on-surface-variant">
+            <span>© 2026 ZEVANA by QUICK_STYLE. All rights reserved.</span>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>All systems operational · 14 riders active</span>
@@ -168,17 +175,6 @@ function AppShell() {
         onRemoveItem={removeItem}
         onPlaceOrder={handlePlaceOrder}
       />
-
-
-
-      {/* 360° Product Viewer / Product Details Modal */}
-      {viewer360Product && (
-        <ProductDetails
-          product={viewer360Product}
-          onClose={() => setViewer360Product(null)}
-          onAddToCart={(product, size) => addToCart(product, size)}
-        />
-      )}
     </div>
   );
 }

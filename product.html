@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ZEVANA - Obsidian Gown</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&amp;family=Outfit:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#313030",
+                      "on-secondary-container": "#b4b5b5",
+                      "primary-fixed": "#e2e2e2",
+                      "on-secondary-fixed": "#1a1c1c",
+                      "secondary-container": "#454747",
+                      "primary-fixed-dim": "#c6c6c6",
+                      "on-tertiary": "#402d0f",
+                      "on-secondary-fixed-variant": "#454747",
+                      "outline": "#988e90",
+                      "surface": "#131313",
+                      "inverse-surface": "#e5e2e1",
+                      "tertiary-fixed-dim": "#e0c298",
+                      "error": "#ffb4ab",
+                      "primary-container": "#000000",
+                      "on-surface-variant": "#cfc4c5",
+                      "tertiary": "#e0c298",
+                      "on-tertiary-container": "#8a714d",
+                      "error-container": "#93000a",
+                      "surface-container-high": "#2a2a2a",
+                      "on-primary-fixed": "#1b1b1b",
+                      "on-primary": "#303030",
+                      "background": "#131313",
+                      "tertiary-fixed": "#fedeb2",
+                      "on-primary-container": "#757575",
+                      "inverse-primary": "#5e5e5e",
+                      "surface-container": "#201f1f",
+                      "secondary-fixed-dim": "#c6c6c7",
+                      "on-primary-fixed-variant": "#474747",
+                      "secondary-fixed": "#e2e2e2",
+                      "surface-tint": "#c6c6c6",
+                      "on-error-container": "#ffdad6",
+                      "primary": "#c6c6c6",
+                      "secondary": "#c6c6c7",
+                      "surface-container-low": "#1c1b1b",
+                      "outline-variant": "#4c4546",
+                      "surface-bright": "#393939",
+                      "tertiary-container": "#000000",
+                      "on-secondary": "#2f3131",
+                      "surface-dim": "#131313",
+                      "surface-container-highest": "#353534",
+                      "on-tertiary-fixed-variant": "#584323",
+                      "on-tertiary-fixed": "#281800",
+                      "surface-container-lowest": "#0e0e0e",
+                      "surface-variant": "#353534",
+                      "on-background": "#e5e2e1",
+                      "on-surface": "#e5e2e1",
+                      "on-error": "#690005"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-desktop": "48px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px",
+                      "unit": "4px",
+                      "section-py-md": "96px",
+                      "section-py-lg": "128px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Playfair Display"
+                      ],
+                      "body-bold": [
+                              "Outfit"
+                      ],
+                      "label-caps": [
+                              "Outfit"
+                      ],
+                      "body-base": [
+                              "Outfit"
+                      ],
+                      "display-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "display-md": [
+                              "Playfair Display"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "label-caps-xs": [
+                              "Outfit"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-bold": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.15em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-base": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-md": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps-xs": [
+                              "9px",
+                              {
+                                      "lineHeight": "12px",
+                                      "letterSpacing": "0.15em",
+                                      "fontWeight": "800"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-surface antialiased">
+<!-- TopNavBar -->
+<nav class="bg-background/80 dark:bg-background/80 backdrop-blur-xl docked full-width top-0 sticky z-50 border-b border-outline-variant/20 flat no shadows flex justify-between items-center w-full px-margin-desktop py-6 max-w-full mx-auto">
+<div class="flex items-center gap-8">
+<a class="font-display-md text-display-md font-bold tracking-tighter text-on-surface dark:text-on-surface hover:opacity-80 transition-opacity" href="#">ZEVANA</a>
+<div class="hidden md:flex gap-6 font-label-caps text-label-caps">
+<a class="text-primary dark:text-primary font-bold border-b border-primary pb-1" href="#">Collections</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface transition-colors duration-300" href="#">Runway</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface transition-colors duration-300" href="#">Editorial</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface transition-colors duration-300" href="#">Atelier</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="bg-surface-container-low border-none text-on-surface placeholder:text-on-surface-variant font-body-base text-sm pl-10 pr-4 py-2 rounded-full focus:ring-1 focus:ring-outline w-48 transition-all focus:w-64" placeholder="Search..." type="text"/>
+</div>
+<button class="hover:backdrop-blur-2xl hover:bg-surface-bright/10 transition-all duration-500 rounded-full p-2 scale-95 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-on-surface">shopping_bag</span>
+</button>
+<button class="font-label-caps text-label-caps border border-outline hover:border-on-surface px-6 py-2 rounded-full transition-colors hidden md:block">Contact</button>
+</div>
+</nav>
+<!-- Product Canvas -->
+<main class="w-full px-margin-mobile md:px-margin-desktop pt-12 pb-section-py-md">
+<!-- Breadcrumbs -->
+<div class="font-label-caps-xs text-label-caps-xs text-on-surface-variant mb-8 flex gap-2 items-center">
+<a class="hover:text-on-surface transition-colors" href="#">HOME</a>
+<span>/</span>
+<a class="hover:text-on-surface transition-colors" href="#">COLLECTIONS</a>
+<span>/</span>
+<span class="text-on-surface">OBSIDIAN GOWN</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter relative">
+<!-- Left: Hero Imagery (7 columns) -->
+<div class="col-span-1 lg:col-span-7 flex flex-col gap-unit">
+<div class="w-full aspect-[3/4] bg-surface-container-lowest relative overflow-hidden group">
+<img alt="High fashion photography of a model wearing a dramatic, flowing black gown against a minimal grey backdrop. The lighting is soft and moody, highlighting the texture of the fabric. The composition is editorial and avant-garde." class="w-full h-full object-cover transform group-hover:scale-[1.03] transition-transform duration-[1200ms] ease-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3lmY5zrCPQQQVcxrfZ-mC2V4YwXdk_5wkdjclK5DbzGsrvsWI8F3OGSPxxgzwPboCc7nV_OPHM9_O4KsAZ6039VhKBQxS36WIWH7vrSYhgyQ7mvdDVTuL2WTRooR8fpqohEpEFHum7oyJQHckEO4pZjsz-L8kaI-0Oz80qRe67D_N4oH12pS6sPcmCZKsXDKqKTV6QZSwf0EKZAsADwgKe5ms758upklQVaY8jIgPpWulevhIp_nM7_U1Aafk6FUQeuPoBndbLko"/>
+<!-- AI Model Plaque (Glassmorphic) -->
+<div class="absolute bottom-6 left-6 bg-surface/40 backdrop-blur-xl border border-outline-variant/30 px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+<p class="font-label-caps-xs text-label-caps-xs text-on-surface-variant mb-1">AI GENERATED MODEL</p>
+<p class="font-body-base text-xs text-on-surface">Height: 5'11" | Wearing Size: S</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-unit">
+<div class="aspect-[3/4] bg-surface-container-lowest overflow-hidden">
+<img alt="Close up detail shot of the back of a black silk dress, showing intricate seaming and subtle texture. The lighting is dramatic and low key, focusing entirely on the garment's construction." class="w-full h-full object-cover hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_TJS9pOXdzOZglqRS9gl9retcA2zxX2ofxdua-0x8s_8P0xBk7SKV2d9CeQO5zA1Eb5LOEsXAYjobQd42dVFuQnyMzzVPAQ9hD_S1dPcsc3pjHb62z8lfgU-AmIx7VBIX-KaWPd3e3XpYOT9jix5i0RWLVNKm4ZlXKEhogyiV-ZIK48WLoNVnYysiBZBBvIZF955BSAapXIiw_K-SZ4OWllAPsrLvZ_sb82qhPIjtgwnVUiEdogheMXoiggjS6aU223JwhKmdG2g"/>
+</div>
+<div class="aspect-[3/4] bg-surface-container-lowest overflow-hidden">
+<img alt="Full length side profile of a model walking in a black gown. The fabric is caught in motion, creating a fluid, dynamic silhouette against a stark, empty studio background." class="w-full h-full object-cover hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJP_P7EQ2wxMxsdNu8f9Re0LmuSNDgjmnu5D1RzxilJ8KWqIX745nQq6v5JRa_DbM7tjTExA2MLJGtzJrwuIgffVJi0iJ_NLe2uiKkHsTqKRV8CGP7_YxJk4YFfkx9oZ15-gFOXyKEsNTMdgFuLoMMV8PC8KBOqPdPS7ZMWrmXOqM3vub3FgCESyy0raFqCUq4HzkBKy6g22jMXq-fmr-0OpVP4FNzVdud-uFYBKupNnB2gDlyGwZCpmLhtKLqtZR1MwKPfI9jZOs"/>
+</div>
+</div>
+</div>
+<!-- Right: Product Details (5 columns) -->
+<div class="col-span-1 lg:col-span-5 lg:pl-12 flex flex-col pt-8 lg:pt-0 sticky top-32 h-fit">
+<div class="flex justify-between items-start mb-6 border-b border-outline-variant/20 pb-8">
+<div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-2">Obsidian Gown</h1>
+<p class="font-body-base text-body-base text-on-surface-variant">Lux Noir Autumn/Winter</p>
+</div>
+<button class="p-2 hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined text-on-surface">favorite</span>
+</button>
+</div>
+<div class="mb-10">
+<p class="font-headline-md text-headline-md text-on-surface mb-4">$3,200</p>
+<p class="font-body-base text-sm text-on-surface-variant leading-relaxed">
+                        A masterclass in minimal extravagance. The Obsidian Gown is sculpted from heavyweight Italian silk crepe, featuring a dramatic asymmetric neckline and a fluid, sweeping train. The architectural precision of the bodice contrasts with the chaotic beauty of the draped skirt.
+                    </p>
+</div>
+<!-- Variations -->
+<div class="mb-8">
+<p class="font-label-caps text-label-caps text-on-surface mb-3 flex items-center justify-between">
+<span>COLOR: <span class="text-on-surface-variant ml-2">Vanta Black</span></span>
+</p>
+<div class="flex gap-3">
+<button aria-label="Select Vanta Black" class="w-8 h-8 rounded-full border border-on-surface bg-[#0a0a0a] ring-2 ring-background ring-offset-1 ring-offset-on-surface focus:outline-none"></button>
+<button aria-label="Select Alabaster" class="w-8 h-8 rounded-full border border-outline-variant bg-[#e5e2e1] hover:border-on-surface transition-colors focus:outline-none"></button>
+</div>
+</div>
+<!-- Size Selector -->
+<div class="mb-10">
+<div class="flex justify-between items-end mb-3">
+<p class="font-label-caps text-label-caps text-on-surface">SELECT SIZE</p>
+<button class="font-label-caps-xs text-label-caps-xs text-on-surface-variant hover:text-on-surface underline transition-colors">SIZE GUIDE</button>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<button class="py-3 border border-outline-variant text-on-surface-variant hover:border-on-surface hover:text-on-surface font-body-base text-sm transition-all focus:outline-none focus:border-on-surface focus:text-on-surface focus:bg-surface-container-high">XS</button>
+<button class="py-3 border border-on-surface bg-surface-container-high text-on-surface font-body-base text-sm transition-all focus:outline-none">S</button>
+<button class="py-3 border border-outline-variant text-on-surface-variant hover:border-on-surface hover:text-on-surface font-body-base text-sm transition-all focus:outline-none focus:border-on-surface focus:text-on-surface focus:bg-surface-container-high">M</button>
+<button class="py-3 border border-outline-variant text-on-surface-variant hover:border-on-surface hover:text-on-surface font-body-base text-sm transition-all focus:outline-none focus:border-on-surface focus:text-on-surface focus:bg-surface-container-high">L</button>
+</div>
+</div>
+<!-- CTAs -->
+<div class="flex flex-col gap-4 mb-12">
+<button class="w-full h-[52px] bg-on-surface text-background font-body-bold text-body-bold hover:bg-surface-tint transition-colors flex items-center justify-center gap-2 group">
+                        ADD TO BAG
+                        <span class="material-symbols-outlined text-sm opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">arrow_forward</span>
+</button>
+<button class="w-full h-[52px] border border-outline-variant text-on-surface bg-transparent font-body-bold text-body-bold hover:border-on-surface hover:bg-surface-container-lowest transition-all">
+                        BOOK A STYLIST FITTING
+                    </button>
+</div>
+<!-- Accordions for Details -->
+<div class="border-t border-outline-variant/20">
+<details class="group py-4 border-b border-outline-variant/20 cursor-pointer" open="">
+<summary class="flex justify-between items-center font-label-caps text-label-caps text-on-surface list-none">
+                            DETAILS &amp; FIT
+                            <span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">keyboard_arrow_down</span>
+</summary>
+<div class="pt-4 font-body-base text-sm text-on-surface-variant leading-relaxed">
+<ul class="list-disc pl-4 space-y-2">
+<li>Asymmetric draped bodice</li>
+<li>Concealed side zip closure</li>
+<li>Floor-sweeping skirt with thigh-high slit</li>
+<li>Tailored fit through the waist, fluid skirt</li>
+<li>Fits true to size</li>
+</ul>
+</div>
+</details>
+<details class="group py-4 border-b border-outline-variant/20 cursor-pointer">
+<summary class="flex justify-between items-center font-label-caps text-label-caps text-on-surface list-none">
+                            COMPOSITION &amp; CARE
+                            <span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">keyboard_arrow_down</span>
+</summary>
+<div class="pt-4 font-body-base text-sm text-on-surface-variant leading-relaxed">
+<p class="mb-2"><strong>Main:</strong> 100% Italian Silk Crepe</p>
+<p class="mb-2"><strong>Lining:</strong> 100% Cupro</p>
+<p>Specialist dry clean only. Cool iron on reverse. Do not spot clean. Handle with care to avoid snagging.</p>
+</div>
+</details>
+<details class="group py-4 border-b border-outline-variant/20 cursor-pointer">
+<summary class="flex justify-between items-center font-label-caps text-label-caps text-on-surface list-none">
+                            SHIPPING &amp; RETURNS
+                            <span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">keyboard_arrow_down</span>
+</summary>
+<div class="pt-4 font-body-base text-sm text-on-surface-variant leading-relaxed">
+<p>Complimentary express shipping on all orders. Returns are accepted within 14 days of delivery. Items must be unworn, in perfect condition, with all tags attached.</p>
+</div>
+</details>
+</div>
+</div>
+</div>
+</main>
+<!-- Complete the Look Section -->
+<section class="w-full px-margin-mobile md:px-margin-desktop py-section-py-md border-t border-outline-variant/10">
+<div class="flex justify-between items-end mb-12">
+<h2 class="font-display-md text-display-md text-on-surface">Complete the Look</h2>
+<a class="font-label-caps-xs text-label-caps-xs text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors" href="#">
+                VIEW ALL CURATIONS
+                <span class="material-symbols-outlined text-[10px]">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<a class="group block" href="#">
+<div class="aspect-[3/4] bg-surface-container-lowest overflow-hidden mb-4 relative">
+<img alt="Close up of a striking, geometric silver bangle bracelet resting on a dark surface. The lighting is sharp, creating strong reflections on the metal, emphasizing its modern, architectural design." class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2qs1oupa3ZbRfd9dvwP7CuX_zg8o0g58Ly5_5RGWPoXlawJ8gV-7WZw2a5hNbDWQywoNv9yH1lPzJwnvI-9RQf1Osbi7WvVnoFMXHDWwrbwKyQyhEgTXYAOips-0pFJ59wX0dBXPJaV52-d9OEdXcBZQkgV5moKrOO40jEgC-5QSWu2cYtSoB7HDmR8GlPOnIcRCy1ysCfc_zl7IXWDc7WnmX8ycADlX9dVZ0UhOp-wKDINlY68rWUOZ5uQpnzJKMst0NzS0orDM"/>
+<div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button class="w-10 h-10 rounded-full bg-surface-container-high/80 backdrop-blur-md flex items-center justify-center border border-outline-variant hover:border-on-surface transition-colors">
+<span class="material-symbols-outlined text-on-surface text-sm">add</span>
+</button>
+</div>
+</div>
+<h3 class="font-body-bold text-body-bold text-on-surface mb-1">Architectural Cuff</h3>
+<p class="font-body-base text-sm text-on-surface-variant">$450</p>
+</a>
+<a class="group block" href="#">
+<div class="aspect-[3/4] bg-surface-container-lowest overflow-hidden mb-4 relative">
+<img alt="A pair of sleek, black pointed-toe stiletto heels standing on a mirrored surface. The background is a deep, soft gradient of greys. The composition is elegant and minimalist, focusing on the sharp silhouette of the shoes." class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyxgUxfPGB0TnIz7gJ71fEPPa_H0E3TFPhrwFwxXOfA0a97de5aDUqjqjLuXH0hyZcJ_sO0jouFk4K_sTtihSabm5ccX37KvutYDew_NsLBnbvCxy933gTcgobZ6twuja3HAjGdhSDziZ2_NeBxxBc5u1VMgCPbHbXf-6uGkVWvOFl8zUWL9KjFsGY5eyM6mpYUpGOTHlEmS6qyZXLJqMlc9HrpWMTtckud6pHvQWZ5B7PM-ngDn6wlTIN9MDVnNNiJrD8nSSKBzI"/>
+<div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button class="w-10 h-10 rounded-full bg-surface-container-high/80 backdrop-blur-md flex items-center justify-center border border-outline-variant hover:border-on-surface transition-colors">
+<span class="material-symbols-outlined text-on-surface text-sm">add</span>
+</button>
+</div>
+</div>
+<h3 class="font-body-bold text-body-bold text-on-surface mb-1">Noir Stiletto</h3>
+<p class="font-body-base text-sm text-on-surface-variant">$890</p>
+</a>
+<a class="group block" href="#">
+<div class="aspect-[3/4] bg-surface-container-lowest overflow-hidden mb-4 relative">
+<img alt="A small, structured black leather clutch bag with minimal silver hardware. It sits against a stark, empty background with dramatic lighting highlighting the texture of the premium leather." class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7bYvXfo6g6fPCO9U1h-AYMtNbc5cDErQRzZAwu4UuKQYskoPq9H1wYDV3_0t2GQ8QnM8gFJor3OKtpFYZ2Wc06KLpf4Nue16Xstn5jMu0cs7HwfoRmp8bwiifDQuag4F6GwJqudPAtNKlYjBdM9-VfHjIM6fNxO6ONrKfn4EQoRbiCBLG65R3YIXv3YzJWOZv4A84b2KiJkxiNaEFJgjP6aaGWgYspERYcfdTHxTTRcpT5UyR8-g1pKyRaZWthZ5mrmXiVi-WxJA"/>
+<div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button class="w-10 h-10 rounded-full bg-surface-container-high/80 backdrop-blur-md flex items-center justify-center border border-outline-variant hover:border-on-surface transition-colors">
+<span class="material-symbols-outlined text-on-surface text-sm">add</span>
+</button>
+</div>
+</div>
+<h3 class="font-body-bold text-body-bold text-on-surface mb-1">Minimalist Minaudiere</h3>
+<p class="font-body-base text-sm text-on-surface-variant">$1,200</p>
+</a>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-background dark:bg-background border-t border-outline-variant/10 flat no shadows w-full px-margin-desktop py-section-py-md flex flex-col md:flex-row justify-between items-center gap-gutter">
+<div class="font-display-md text-display-md text-on-surface">ZEVANA</div>
+<div class="flex gap-6 font-label-caps-xs text-label-caps-xs">
+<a class="text-outline hover:text-on-surface transition-colors duration-300" href="#">Privacy Policy</a>
+<a class="text-outline hover:text-on-surface transition-colors duration-300" href="#">Terms of Service</a>
+<a class="text-outline hover:text-on-surface transition-colors duration-300" href="#">Shipping &amp; Returns</a>
+<a class="text-outline hover:text-on-surface transition-colors duration-300" href="#">Sustainability</a>
+</div>
+<div class="font-label-caps-xs text-label-caps-xs text-on-background dark:text-on-background opacity-50">
+            © 2024 ZEVANA HAUTE COUTURE. ALL RIGHTS RESERVED.
+        </div>
+</footer>
+</body></html>

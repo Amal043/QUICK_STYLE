@@ -64,66 +64,92 @@ export const TrendingBanner: React.FC = () => {
   const slide = bannerSlides[currentSlide];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-3xl min-h-[300px] sm:min-h-[260px] flex border border-panelBorder/30 shadow-xl bg-[#FAF8F5]">
+    <div className="full-bleed relative h-[500px] md:h-[600px] overflow-hidden bg-stone-100 border-none shadow-none -mt-4">
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
-          initial={{ opacity: 0, x: 25 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -25 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className={`w-full rounded-3xl bg-gradient-to-r ${slide.colorClass} border-none p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-6 relative`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className={`absolute inset-0 w-full h-full bg-gradient-to-r ${slide.colorClass} border-none p-0 flex items-center justify-between`}
         >
-          {/* Subtle Grid Lines Overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.01)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none rounded-3xl"></div>
+          {/* Background image for slide 1 (Cozy Velvet), or standard gradient layout for slides 2/3 */}
+          {slide.id === 1 ? (
+            <img
+              src={slide.image}
+              alt={slide.title}
+              className="absolute inset-0 w-full h-full object-cover object-center opacity-95 select-none z-0"
+            />
+          ) : (
+            <div className="absolute inset-0 w-full h-full flex items-center justify-end pointer-events-none select-none z-0 overflow-hidden">
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className="max-h-[85%] md:max-h-[90%] object-contain scale-110 md:translate-x-[-10%] translate-y-4 filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.15)]"
+              />
+            </div>
+          )}
 
-          {/* Left: Editorial content */}
-          <div className="relative z-10 space-y-4 max-w-lg text-left">
-            <span className="text-[10px] uppercase tracking-widest bg-white text-gray-800 px-3.5 py-1.5 rounded-md border border-panelBorder shadow-sm font-bold font-jakarta">
+          {/* Minimalist Dark Gradient overlay (only on slide 1 to make text pop, or all slides if text is white) */}
+          {slide.id === 1 && (
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10 md:bg-gradient-to-r md:from-black/70 md:via-transparent md:to-transparent z-10"></div>
+          )}
+
+          {/* Bottom-left: Soft glassmorphism text overlay */}
+          <div className={`absolute bottom-8 left-8 md:bottom-16 md:left-16 z-20 p-6 md:p-8 rounded-[24px] max-w-sm md:max-w-md text-left space-y-4 border shadow-2xl backdrop-blur-luxe ${
+            slide.id === 1 
+              ? 'bg-black/35 border-white/10 text-white' 
+              : 'bg-white/70 border-white/40 text-gray-900'
+          }`}>
+            <span className={`text-[10px] uppercase tracking-[0.25em] px-3 py-1.5 rounded-lg font-extrabold border inline-block ${
+              slide.id === 1 ? 'bg-white/10 border-white/20 text-[#C5A880]' : 'bg-gray-950/5 border-gray-950/10 text-gray-800'
+            }`}>
               {slide.brand}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight tracking-tight font-jakarta">
+            <h2 className={`text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight font-jakarta ${
+              slide.id === 1 ? 'text-white' : 'text-gray-900'
+            }`}>
               {slide.title}
             </h2>
-            <p className={`text-xs ${slide.textColor} font-normal leading-relaxed max-w-md`}>
+            <p className={`text-xs leading-relaxed max-w-xs font-normal ${
+              slide.id === 1 ? 'text-stone-300' : 'text-gray-600'
+            }`}>
               {slide.description}
             </p>
 
             <div className="pt-2 flex items-center gap-6">
               <a
                 href="#marketplace"
-                className="px-6 py-3 rounded-full bg-gray-950 hover:bg-gray-800 text-white text-xs font-bold transition-all duration-300 flex items-center gap-2 active:scale-95 shadow-md group cursor-pointer"
+                className={`px-6 py-3 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2 active:scale-95 shadow-md group cursor-pointer ${
+                  slide.id === 1 
+                    ? 'bg-[#C5A880] hover:bg-[#C5A880]/90 text-white' 
+                    : 'bg-gray-950 hover:bg-gray-800 text-white'
+                }`}
               >
                 <span>{slide.actionText}</span>
                 <ArrowRight className="w-3.5 h-3.5 text-white group-hover:translate-x-1 transition-transform" />
               </a>
 
               {/* Dot Indicators */}
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 {bannerSlides.map((_, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setCurrentSlide(idx)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentSlide(idx);
+                    }}
                     className={`w-1.5 h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      currentSlide === idx ? 'bg-gray-900 w-4' : 'bg-gray-900/30 hover:bg-gray-900/60'
+                      currentSlide === idx 
+                        ? (slide.id === 1 ? 'bg-white w-4' : 'bg-gray-900 w-4') 
+                        : (slide.id === 1 ? 'bg-white/30 hover:bg-white/60' : 'bg-gray-900/30 hover:bg-gray-900/60')
                     }`}
                   ></button>
                 ))}
               </div>
             </div>
           </div>
-
-          {/* Right: Absolute luxury image placeholder */}
-          <div className="relative md:absolute right-0 bottom-0 top-0 w-full md:w-[45%] h-[200px] md:h-full flex items-center justify-center md:justify-end pointer-events-none select-none z-0">
-            {/* Blending Gradient Mask */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FAF8F5]/20 to-transparent z-10 hidden md:block"></div>
-            <img
-              src={slide.image}
-              alt={slide.title}
-              className="max-h-[90%] max-w-[90%] md:max-h-full md:max-w-none object-contain md:object-cover md:object-center translate-y-4 md:translate-y-0 scale-105 filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.2)] transition-transform duration-[1000ms] hover:scale-110"
-            />
-          </div>
-
         </motion.div>
       </AnimatePresence>
     </div>

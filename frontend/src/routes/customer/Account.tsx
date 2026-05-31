@@ -6,7 +6,6 @@ export default function Account() {
   const { adminMode, userProfile, setUserProfile } = useStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'addresses'>('profile');
   const [loading, setLoading] = useState(!userProfile);
-  
   const [profile, setProfile] = useState({ name: '', email: '', phone: '' });
   const [addresses, setAddresses] = useState<any[]>([]);
   

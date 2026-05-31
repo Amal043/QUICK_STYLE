@@ -24,4 +24,5 @@ loguru
 razorpay
 twilio
 ffmpeg-python
-
+polyline
+google-generativeai

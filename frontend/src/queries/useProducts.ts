@@ -63,56 +63,59 @@ function resolve360Frames(p: any): string[] {
   return [];
 }
 
-const fetchProducts = async (): Promise<Product[]> => {
-  const response = await fetch('/api/v1/products');
+export const mapProduct = (p: any): Product => {
+  // Calculate distance from user to store
+  const coords = p.store_location?.coordinates || [88.36, 22.50];
+  const distKm = haversineKm(USER_LAT, USER_LNG, coords[1], coords[0]);
+  const eta = estimateEta(distKm);
+
+  // Get total stock across all sizes
+  const totalStock = p.stock
+    ? Object.values(p.stock as Record<string, number>).reduce((a: number, b: number) => a + b, 0)
+    : 0;
+
+  return {
+    id: p.id,
+    name: p.name,
+    price: p.price ?? { mrp: 0, selling_price: 0, discount_percent: 0 },
+    image: resolveImage(p),
+    gallery: resolveGallery(p),
+    frames_360: resolve360Frames(p),
+    has_360: p.colors?.[0]?.images?.has_360 || false,
+    category: p.category || 'Streetwear',
+    subcategory: p.subcategory || '',
+    brand: p.brand || 'Local Boutique',
+    gender: p.gender || 'unisex',
+    boutique: p.store_name,
+    store_name: p.store_name,
+    store_location: p.store_location || { type: 'Point', coordinates: [88.36, 22.50] },
+    distance: Math.round(distKm * 10) / 10,
+    delivery_eta: eta,
+    fitAccuracy: p.fit_confidence_avg ?? 95,
+    stock: p.stock || {},
+    description: p.description ?? '',
+    rating: p.rating ?? { average: 4.5, count: 10 },
+    colors: p.colors || [],
+    sizes_available: p.sizes_available || ['S', 'M', 'L', 'XL'],
+    tags: p.tags || [],
+  } as Product;
+};
+
+export const fetchProducts = async (queryStr?: string): Promise<Product[]> => {
+  const url = queryStr ? `/api/v1/products?${queryStr}` : '/api/v1/products';
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch products');
   }
   const data = await response.json();
   
-  return data.map((p: any) => {
-    // Calculate distance from user to store
-    const coords = p.store_location?.coordinates || [88.36, 22.50];
-    const distKm = haversineKm(USER_LAT, USER_LNG, coords[1], coords[0]);
-    const eta = estimateEta(distKm);
-
-    // Get total stock across all sizes
-    const totalStock = p.stock
-      ? Object.values(p.stock as Record<string, number>).reduce((a: number, b: number) => a + b, 0)
-      : 0;
-
-    return {
-      id: p.id,
-      name: p.name,
-      price: p.price ?? { mrp: 0, selling_price: 0, discount_percent: 0 },
-      image: resolveImage(p),
-      gallery: resolveGallery(p),
-      frames_360: resolve360Frames(p),
-      has_360: p.colors?.[0]?.images?.has_360 || false,
-      category: p.category || 'Streetwear',
-      subcategory: p.subcategory || '',
-      brand: p.brand || 'Local Boutique',
-      gender: p.gender || 'unisex',
-      boutique: p.store_name,
-      store_name: p.store_name,
-      store_location: p.store_location || { type: 'Point', coordinates: [88.36, 22.50] },
-      distance: Math.round(distKm * 10) / 10,
-      delivery_eta: eta,
-      fitAccuracy: p.fit_confidence_avg ?? 95,
-      stock: p.stock || {},
-      description: p.description ?? '',
-      rating: p.rating ?? { average: 4.5, count: 10 },
-      colors: p.colors || [],
-      sizes_available: p.sizes_available || ['S', 'M', 'L', 'XL'],
-      tags: p.tags || [],
-    } as Product;
-  });
+  return data.map(mapProduct);
 };
 
-export const useProducts = () => {
+export const useProducts = (queryStr?: string) => {
   return useQuery<Product[]>({
-    queryKey: ['products'],
-    queryFn: fetchProducts,
+    queryKey: ['products', queryStr],
+    queryFn: () => fetchProducts(queryStr),
     staleTime: 1000 * 60 * 5,
   });
 };

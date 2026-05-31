@@ -9,6 +9,7 @@ POST /api/v1/products          — create product
 
 from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import Optional
+import re
 from bson import ObjectId
 from app.db.connection import get_db
 from app.models.product import ProductCreate, ProductResponse
@@ -25,7 +26,7 @@ def doc_to_product(doc: dict) -> dict:
     return doc
 
 
-@router.get("/", response_model=list[dict])
+@router.get("", response_model=list[dict])
 async def get_products(
     category: Optional[str] = Query(None),
     subcategory: Optional[str] = Query(None),
@@ -34,6 +35,9 @@ async def get_products(
     max_price: Optional[float] = Query(None),
     in_stock: bool = Query(False),
     min_fit_score: Optional[int] = Query(None),
+    sizes: Optional[str] = Query(None, description="Comma-separated sizes"),
+    colors: Optional[str] = Query(None, description="Comma-separated colors"),
+    min_discount: Optional[int] = Query(None, description="Minimum discount percentage"),
     sort_by: str = Query("created_at"),   # created_at | price | rating | fit_score
     limit: int = Query(20, le=100),
     skip: int = Query(0),
@@ -56,6 +60,21 @@ async def get_products(
         query["$expr"] = {"$gt": [{"$sum": {"$objectToArray": "$stock"}}, 0]}
     if min_fit_score is not None:
         query["fit_confidence_avg"] = {"$gte": min_fit_score}
+    
+    if sizes:
+        size_list = [s.strip() for s in sizes.split(",") if s.strip()]
+        if size_list:
+            query["sizes_available"] = {"$in": size_list}
+            
+    if colors:
+        color_list = [c.strip() for c in colors.split(",") if c.strip()]
+        if color_list:
+            # Create regexes for case-insensitive exact matching
+            regexes = [re.compile(f"^{re.escape(c)}$", re.IGNORECASE) for c in color_list]
+            query["colors.name"] = {"$in": regexes}
+            
+    if min_discount is not None:
+        query.setdefault("price.discount_percent", {})["$gte"] = min_discount
 
     sort_map = {
         "created_at": [("created_at", -1)],

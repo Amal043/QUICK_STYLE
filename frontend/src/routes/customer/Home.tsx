@@ -1,254 +1,217 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { useProducts } from '../../queries/useProducts';
-import { TrendingBanner } from '../../components/product/TrendingBanner';
-import { CategoryTabs } from '../../components/CategoryTabs';
 import { ProductCard } from '../../components/product/ProductCard';
-import type { Product, Size } from '../../types';
-import { ArrowRight, Box, ShieldCheck, Bike, Zap, ChevronDown } from 'lucide-react';
-import purpleModel from '../../assets/purple_fur_model.png';
+import type { Product } from '../../types';
+import { CategorySlider } from '../../components/CategorySlider';
 
 interface HomeProps {
   onOpenSizingGuide: (product: Product) => void;
-  onOpen360Viewer: (product: Product) => void;
 }
 
-export default function Home({ onOpenSizingGuide, onOpen360Viewer }: HomeProps) {
-  const {
-    cart,
-    addToCart,
-    selectedSizes,
-    setSize,
-    activeCategory,
-    setCategory
-  } = useStore();
-
+export default function Home({ onOpenSizingGuide }: HomeProps) {
+  const navigate = useNavigate();
   const { data: queryProducts } = useProducts();
   const [products, setProducts] = useState<Product[]>([]);
-  const [sortBy, setSortBy] = useState<string>('featured');
-  const [showHotDeals, setShowHotDeals] = useState<boolean>(false);
-  const [showDiscount, setShowDiscount] = useState<boolean>(false);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [isPopupExpanded, setIsPopupExpanded] = useState(false);
 
-  // Sync query products to local state to support local stock deductions
+  const heroImages = []; // No longer needed as we use the video
+
+  const fashionLoopImages = [
+    '/stitch/fashion_video_1.png',
+    '/stitch/fashion_video_2.png',
+    '/stitch/fashion_video_3.png',
+    '/stitch/fashion_video_4.png'
+  ];
+
+  const [activeLoopIdx, setActiveLoopIdx] = useState(0);
+
+  const categoryItems = [
+    { id: '1', title: 'Must-Have Tees', subtitle: 'UNDER ₹ 499', image: '/photos/blazer_formal/main.png', link: '/collection?category=Streetwear' },
+    { id: '2', title: 'Cool T-Shirts', subtitle: 'UNDER ₹ 399', image: '/photos/tshirt_coral/main.png', link: '/collection?category=Activewear' },
+    { id: '3', title: 'Tailored Trousers', subtitle: 'UNDER ₹ 599', image: '/photos/dress_black_striped/main.jpg', link: '/collection?category=Editorial' },
+    { id: '4', title: 'Charming Dresses', subtitle: 'UNDER ₹ 499', image: '/photos/dress_brown_midi/main.jpg', link: '/collection?category=Streetwear' },
+    { id: '5', title: 'Suits & Blazers', subtitle: 'UNDER ₹ 2999', image: '/photos/blazer_formal/main.png', link: '/collection?category=Formals' },
+    { id: '6', title: 'Hottest Handbags', subtitle: 'UNDER ₹ 1599', image: '/stitch/minaudiere.jpg', link: '/collection?category=Accessories' },
+    { id: '7', title: 'Formal Footwear', subtitle: 'STARTING ₹ 799', image: '/stitch/noir_stiletto.jpg', link: '/collection?category=Runway' },
+  ];
+
   useEffect(() => {
     if (queryProducts) {
       setProducts(queryProducts);
     }
   }, [queryProducts]);
 
-  const handleAddToCart = (product: Product) => {
-    const size = selectedSizes[product.id];
-    if (!size) {
-      const selectBox = document.getElementById(`size-select-${product.id}`);
-      if (selectBox) {
-        selectBox.classList.add('animate-bounce-slow');
-        setTimeout(() => selectBox.classList.remove('animate-bounce-slow'), 1000);
-      }
-      return;
-    }
-    addToCart(product, size);
-  };
+  useEffect(() => {
+    // Video doesn't need interval state
+  }, []);
 
-  let filteredProducts = activeCategory === 'All'
-    ? [...products]
-    : products.filter(p => p.category === activeCategory);
+  useEffect(() => {
+    const loopInterval = setInterval(() => {
+      setActiveLoopIdx((prev) => (prev + 1) % fashionLoopImages.length);
+    }, 3000); // 3 seconds per frame for the circulating animation
+    return () => clearInterval(loopInterval);
+  }, [fashionLoopImages.length]);
 
-  if (showHotDeals) {
-    filteredProducts = filteredProducts.filter(p => p.price.discount_percent >= 50);
-  } else if (showDiscount) {
-    filteredProducts = filteredProducts.filter(p => p.price.discount_percent > 0);
-  }
-
-  if (sortBy === 'price_low') {
-    filteredProducts.sort((a, b) => a.price.selling_price - b.price.selling_price);
-  } else if (sortBy === 'price_high') {
-    filteredProducts.sort((a, b) => b.price.selling_price - a.price.selling_price);
-  } else if (sortBy === 'rating') {
-    filteredProducts.sort((a, b) => b.rating.average - a.rating.average);
-  }
+  useEffect(() => {
+    const popupInterval = setInterval(() => {
+      setIsPopupExpanded(true);
+      setTimeout(() => setIsPopupExpanded(false), 5000); // Collapse after 5 seconds
+    }, 15000); // Expand every 15 seconds
+    
+    return () => clearInterval(popupInterval);
+  }, []);
 
   return (
-    <div className="space-y-12 animate-fade-in">
-      {/* Promo swipe banners */}
-      <TrendingBanner />
-
-      {/* Hero Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Model Hero Banner (Rich Dark Velvet Wine with Gold accents for luxury feel) */}
-        <div className="lg:col-span-7 rounded-3xl overflow-hidden bg-[#2A141A] border border-[#C5A880]/30 relative flex flex-col justify-between p-8 sm:p-12 shadow-2xl min-h-[460px] md:min-h-[500px]">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
-          <div className="absolute right-0 bottom-0 top-0 w-1/2 md:w-3/5 pointer-events-none select-none">
-            <img src={purpleModel} alt="Premium Model" className="w-full h-full object-cover object-center translate-y-4 md:translate-y-0 scale-105 md:scale-110 filter drop-shadow-2xl" />
-          </div>
-
-          <div className="relative z-10">
-            <span className="text-xs uppercase tracking-widest bg-white/5 text-white/90 px-3.5 py-1.5 rounded-full font-bold border border-white/10">
-              ✨ QUICK_STYLE EXCLUSIVE
-            </span>
-          </div>
-
-          <div className="max-w-xs md:max-w-md relative z-10 space-y-4 my-auto">
-            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-white tracking-tight font-jakarta">
-              Unlock the Magic of Fashion
-            </h1>
-            <p className="text-rose-100/90 text-sm md:text-base leading-relaxed font-light">
-              Vibrant local boutique catalogs, real-time AI styling assistance, and quick scooter delivery. Try our AI fit matchmaking tool now!
-            </p>
-          </div>
-
-          <div className="relative z-10 flex items-center gap-6 mt-6">
-            <a href="#marketplace" className="bg-[#C5A880] hover:bg-[#C5A880]/90 text-[#FAF8F5] px-8 py-4 rounded-2xl font-bold text-sm shadow-xl transition-all duration-300 active:scale-95 flex items-center gap-2 group cursor-pointer">
-              <span>Shop Now</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </a>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-white"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-white/40"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-white/40"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-white/40"></span>
-            </div>
-          </div>
+    <>
+      <div className="space-y-0 animate-fade-in pb-24 relative">
+        {/* Hero Section */}
+      <section className="relative min-h-[921px] flex flex-col md:flex-row px-margin-mobile md:px-margin-desktop py-section-py-md gap-gutter items-center overflow-hidden" id="hero-section">
+        <div className="cinematic-canvas bg-black" id="fashion-film-container">
+           <video 
+             src="/videos/hero-animation.mp4"
+             className="w-full h-full object-cover opacity-[0.55]"
+             autoPlay
+             loop
+             muted
+             playsInline
+           />
         </div>
+        <div className="light-leaks"></div>
+        <div className="film-grain"></div>
+        <div className="vignette"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/50 to-transparent z-10 pointer-events-none"></div>
 
-        {/* Right: Pitch card pointing to the AI Chat Stylist */}
-        <div className="lg:col-span-5 glass-card rounded-3xl border border-panelBorder p-8 flex flex-col justify-between shadow-2xl relative min-h-[460px] md:min-h-[500px] bg-white">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A880]/5 rounded-full filter blur-3xl pointer-events-none"></div>
-          <div className="space-y-6">
-            <span className="text-[9px] font-bold bg-[#FAF0F1] border border-coral/10 text-coral px-3 py-1 rounded-full uppercase tracking-wider">
-              AI Concierge Service
-            </span>
-            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight font-jakarta">
-              Meet Your Personal AI Stylist
-            </h2>
-            <p className="text-sm text-gray-500 leading-relaxed font-light">
-              Describe your occasion, sizing problems, or look preferences, and our neural shopping pilot will scan local boutique inventory to coordinate your exact fit in seconds.
-            </p>
+        <div className="w-full md:w-1/3 flex flex-col justify-center stagger-1 z-20 relative">
+          <p className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-4 tracking-widest drop-shadow-md">Avant-Garde</p>
+          <h1 className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-6 drop-shadow-lg">THE NOIR<br />COLLECTION</h1>
+          <p className="font-body-base text-body-base text-on-surface-variant max-w-sm mb-8 drop-shadow-md">
+            At Zevana, we craft garments that move with grace and speak with style. From timeless classics to modern silhouettes.
+          </p>
+          <button 
+            onClick={() => navigate('/collection')}
+            className="bg-on-surface text-surface font-label-caps text-label-caps uppercase px-8 py-4 w-fit flex items-center gap-2 hover:bg-primary hover:scale-105 hover:shadow-[0_0_20px_rgba(198,198,198,0.3)] transition-all duration-300 group"
+          >
+            Explore Collection
+            <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+          </button>
+        </div>
+        
+        <div className="w-full md:w-2/3 h-[614px] md:h-[819px] relative flex justify-end items-center z-20 pointer-events-none pb-12 md:pb-0 pr-0 md:pr-24">
+        </div>
+        
+        <div className="hidden md:flex w-1/12 flex-col justify-end items-end h-full stagger-3 absolute right-margin-desktop bottom-section-py-md z-20 pointer-events-none">
+          <p className="font-display-md text-display-md text-outline-variant/40 vertical-writing-rl rotate-180 select-none tracking-widest drop-shadow-md">
+            AUTUMN / WINTER
+          </p>
+        </div>
+      </section>
+
+      {/* Promotional Banners & Fashion Loop Section */}
+      <section className="px-margin-mobile md:px-margin-desktop py-section-py-md bg-background">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          {/* Promos */}
+          <div className="flex flex-col gap-4">
+            <div 
+              onClick={() => navigate('/collection?min_discount=50')}
+              className="w-full bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl p-6 flex flex-col justify-center items-center cursor-pointer shadow-lg hover:scale-[1.02] transition-transform"
+            >
+              <h3 className="font-display-lg text-white text-3xl md:text-5xl font-extrabold tracking-tight drop-shadow-md">FLAT ₹500 OFF</h3>
+              <p className="text-white/90 text-sm md:text-base mt-2 font-body-bold">On Your 1st Purchase</p>
+            </div>
             
-            <div className="border border-panelBorder/60 rounded-2xl p-4 bg-[#FAF8F5] space-y-3">
-              <div className="flex items-start gap-2.5 text-xs text-gray-700">
-                <span className="p-1 rounded bg-[#5C1324]/10 text-coral font-bold mt-0.5">Prompt</span>
-                <p className="italic">"Need a knit sweater for NIT Jamshedpur presentation today..."</p>
+            <div 
+              onClick={() => navigate('/collection?min_discount=50')}
+              className="w-full relative overflow-hidden rounded-2xl h-48 cursor-pointer shadow-lg hover:scale-[1.02] transition-transform bg-purple-900 group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/40 to-purple-800/80 z-10"></div>
+              <img src="/stitch/fashion_video_4.png" alt="Sale is Live" className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" />
+              <div className="absolute inset-0 z-20 flex flex-col justify-center items-center text-center p-6">
+                <div className="border-4 border-white/80 p-2 md:p-4 rounded-xl backdrop-blur-sm bg-black/20">
+                  <h3 className="font-display-lg text-white text-3xl md:text-4xl font-extrabold tracking-widest drop-shadow-lg">SALE IS</h3>
+                  <h3 className="font-display-lg text-amber-400 text-4xl md:text-6xl font-extrabold tracking-widest drop-shadow-lg mt-1">LIVE</h3>
+                </div>
               </div>
             </div>
           </div>
-
-          <a href="/chat" className="w-full py-4 rounded-xl bg-[#5C1324] hover:bg-[#430E1A] text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 text-center flex items-center justify-center gap-2 shadow-lg shadow-coral/10 cursor-pointer">
-            <Zap className="w-4 h-4 fill-white" />
-            <span>Launch AI Stylist Chat</span>
-          </a>
-        </div>
-      </section>
-
-      {/* Flipkart Style Filter Bar */}
-      <section className="bg-white border-y border-panelBorder py-3 mb-6 sticky top-[72px] z-30 shadow-sm">
-        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar px-2">
-          <button 
-            onClick={() => setSortBy(prev => prev === 'price_low' ? 'price_high' : prev === 'price_high' ? 'featured' : 'price_low')}
-            className={`flex items-center gap-1 border px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition
-              ${sortBy !== 'featured' ? 'bg-coral/10 border-coral text-coral' : 'bg-[#FAF8F5] border-panelBorder text-gray-700 hover:bg-gray-100'}`}
-          >
-            <span>{sortBy === 'price_low' ? 'Price: Low to High' : sortBy === 'price_high' ? 'Price: High to Low' : 'Sort By'}</span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${sortBy !== 'featured' ? 'rotate-180' : ''}`} />
-          </button>
           
-          <button 
-            onClick={() => setSortBy(prev => prev === 'rating' ? 'featured' : 'rating')}
-            className={`border px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition
-              ${sortBy === 'rating' ? 'bg-coral/10 border-coral text-coral' : 'bg-[#FAF8F5] border-panelBorder text-gray-700 hover:bg-gray-100'}`}
-          >
-            Customer Ratings
-          </button>
-          
-          <button 
-            onClick={() => { setShowDiscount(!showDiscount); setShowHotDeals(false); }}
-            className={`border px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition
-              ${showDiscount ? 'bg-coral/10 border-coral text-coral' : 'bg-[#FAF8F5] border-panelBorder text-gray-700 hover:bg-gray-100'}`}
-          >
-            Discounted Items
-          </button>
-          
-          <button 
-            onClick={() => { setShowHotDeals(!showHotDeals); setShowDiscount(false); }}
-            className={`border px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition flex items-center gap-1
-              ${showHotDeals ? 'bg-coral text-white border-coral' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
-          >
-            <Zap className="w-3.5 h-3.5" /> Hot Deals (50%+ Off)
-          </button>
-        </div>
-      </section>
-
-      {/* Live Marketplace */}
-      <section id="marketplace" className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-sm border border-emerald-200">
-                assured
-              </span>
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-500">FASHION & LIFESTYLE</span>
-            </div>
-            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight font-jakarta flex items-center gap-3">
-              Top Picks For You
-              <span className="text-sm bg-coral text-white px-2 py-1 rounded shadow-sm animate-pulse font-bold">HOT DEALS</span>
-            </h2>
-            <p className="text-gray-600 text-sm mt-1">Ready-to-ship boutique garments near you.</p>
+          {/* Fashion Loop (Images Restored) */}
+          <div className="w-full h-full min-h-[400px] relative rounded-2xl overflow-hidden shadow-2xl border border-outline-variant/20">
+            {fashionLoopImages.map((src, index) => (
+              <div 
+                key={src}
+                className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${index === activeLoopIdx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+              >
+                <img src={src} className="w-full h-full object-cover" alt="Fashion Editorial Loop" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
+                <div className="absolute bottom-6 left-6 z-20">
+                  <p className="font-label-caps text-white text-sm tracking-widest opacity-80 mb-1">A W E 2 6</p>
+                  <p className="font-display-md text-white text-2xl drop-shadow-md">The New Standard</p>
+                </div>
+              </div>
+            ))}
           </div>
-
-          {/* Framer motion category tabs */}
-          <CategoryTabs
-            activeCategory={activeCategory}
-            onSelectCategory={setCategory}
-          />
         </div>
 
-        {/* Bento grid marketplace */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
-          {filteredProducts.map((product) => (
+        {/* Category Sliders */}
+        <div className="mt-16">
+          <div className="flex justify-between items-end mb-4">
+            <h2 className="font-display-md text-display-md text-on-surface">Explore Categories</h2>
+          </div>
+          <CategorySlider items={categoryItems} />
+        </div>
+      </section>
+
+      {/* Trending Now */}
+      <section id="trending-now" className="px-margin-mobile md:px-margin-desktop py-section-py-lg">
+        <div className="flex justify-between items-end mb-12 stagger-1">
+          <div>
+            <h2 className="font-display-md text-display-md text-on-surface">Trending Now</h2>
+            <p className="font-body-base text-body-base text-on-surface-variant mt-2">Curated selections from the Atelier.</p>
+          </div>
+          <button 
+            onClick={() => navigate('/collection')}
+            className="hidden md:flex items-center gap-2 font-label-caps text-label-caps text-on-surface uppercase hover:text-primary transition-colors border-b border-transparent hover:border-primary pb-1 cursor-pointer"
+          >
+            View All <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-gutter">
+          {products.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
-              selectedSize={selectedSizes[product.id]}
-              onSelectSize={(id, sz) => setSize(id, sz)}
-              onAddToCart={handleAddToCart}
-              onOpenSizingGuide={onOpenSizingGuide}
-              onOpen360Viewer={onOpen360Viewer}
+              selectedSize={undefined} // Handled in details modal now
+              onSelectSize={() => {}}
+              onAddToCart={() => {}}
+              onOpenSizingGuide={() => {}}
+              onOpen360Viewer={() => {}}
             />
           ))}
         </div>
       </section>
-
-      {/* Feature cards */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card rounded-2xl border border-panelBorder p-6 space-y-3 flex items-start gap-4 hover:border-coral/20 transition-colors bg-white">
-          <div className="bg-[#FAF8F5] p-3 rounded-xl border border-[#C5A880]/30 text-[#C5A880]">
-            <Box className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="font-bold text-sm text-gray-900">Zero-Inventory Architecture</h3>
-            <p className="text-xs text-gray-500 leading-relaxed">Connecting you directly to live local inventory in verified boutique stores nearby. Zero latency shipping.</p>
-          </div>
-        </div>
-
-        <div className="glass-card rounded-2xl border border-panelBorder p-6 space-y-3 flex items-start gap-4 hover:border-coral/20 transition-colors bg-white">
-          <div className="bg-[#FAF8F5] p-3 rounded-xl border border-[#C5A880]/30 text-[#C5A880]">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="font-bold text-sm text-gray-900">Hyper-Accurate Fit Calibration</h3>
-            <p className="text-xs text-gray-500 leading-relaxed">Smart sizing AI calculates exact mappings between Zara and local boutiques so it fits you right, first try.</p>
-          </div>
-        </div>
-
-        <div className="glass-card rounded-2xl border border-panelBorder p-6 space-y-3 flex items-start gap-4 hover:border-coral/20 transition-colors bg-white">
-          <div className="bg-[#FAF8F5] p-3 rounded-xl border border-[#C5A880]/30 text-[#C5A880]">
-            <Bike className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="font-bold text-sm text-gray-900">Instant Scooter Delivery</h3>
-            <p className="text-xs text-gray-500 leading-relaxed">Automated local courier dispatching system delivers premium sealed packages in under 12 minutes.</p>
-          </div>
-        </div>
-      </section>
     </div>
+
+    {/* Expanding Side Popup (Fixed correctly outside animated wrapper) */}
+    <div 
+      className={`fixed top-1/2 right-0 -translate-y-1/2 z-[100] flex items-center bg-error text-surface shadow-xl rounded-l-full cursor-pointer transition-all duration-500 overflow-hidden border border-r-0 border-outline-variant/30 ${
+        isPopupExpanded ? 'w-[240px] px-6 py-4' : 'w-[56px] h-[56px] justify-center hover:w-[240px] hover:px-6'
+      }`}
+      onMouseEnter={() => setIsPopupExpanded(true)}
+      onMouseLeave={() => setIsPopupExpanded(false)}
+      onClick={() => navigate('/collection?min_discount=50')}
+    >
+      <span className="material-symbols-outlined text-2xl flex-shrink-0 animate-pulse">
+        local_fire_department
+      </span>
+      <div className={`ml-3 flex flex-col whitespace-nowrap transition-opacity duration-300 ${isPopupExpanded ? 'opacity-100' : 'opacity-0 hidden group-hover:block'}`}>
+        <span className="font-label-caps text-label-caps uppercase tracking-wider">Flash Sale</span>
+        <span className="font-body-base text-xs opacity-90">Up to 50% Off</span>
+      </div>
+    </div>
+  </>
   );
 }

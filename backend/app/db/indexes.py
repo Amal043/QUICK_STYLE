@@ -9,60 +9,55 @@ from pymongo import ASCENDING, DESCENDING, GEOSPHERE, TEXT
 
 async def create_indexes(db: AsyncIOMotorDatabase):
     print("Creating MongoDB indexes...")
+    import pymongo.errors
+    
+    async def safe_create_index(collection, *args, **kwargs):
+        try:
+            await collection.create_index(*args, **kwargs)
+        except pymongo.errors.OperationFailure as e:
+            print(f"Warning: Index creation failed on {collection.name}: {e.details.get('errmsg', str(e))}")
 
     # ── users ──────────────────────────────────────────────────────
-    await db.users.create_index("email", unique=True)
-    try:
-        await db.users.create_index("phone", unique=True, sparse=True)
-    except Exception as e:
-        if "IndexKeySpecsConflict" in str(e) or "IndexOptionsConflict" in str(e) or "same name" in str(e):
-            print("  - phone index conflict detected. Dropping old 'phone_1' index and recreating...")
-            try:
-                await db.users.drop_index("phone_1")
-                await db.users.create_index("phone", unique=True, sparse=True)
-            except Exception as drop_err:
-                print(f"  - Failed to drop conflicting phone index: {drop_err}. Retrying with custom name...")
-                await db.users.create_index("phone", unique=True, sparse=True, name="phone_unique_sparse")
-        else:
-            raise e
-    await db.users.create_index("role")
-    await db.users.create_index("last_active")
+    await safe_create_index(db.users, "email", unique=True)
+    await safe_create_index(db.users, "phone", unique=True, sparse=True)
+    await safe_create_index(db.users, "role")
+    await safe_create_index(db.users, "last_active")
     print("  - users indexes")
 
     # ── products ───────────────────────────────────────────────────
-    await db.products.create_index("store_id")
-    await db.products.create_index("category")
-    await db.products.create_index("subcategory")
-    await db.products.create_index("active")
-    await db.products.create_index([("name", TEXT), ("description", TEXT), ("tags", TEXT)])
-    await db.products.create_index([("store_location", GEOSPHERE)])
-    await db.products.create_index("price.selling_price")
-    await db.products.create_index([("rating.average", DESCENDING)])
-    await db.products.create_index([("fit_confidence_avg", DESCENDING)])
-    await db.products.create_index([("created_at", DESCENDING)])
+    await safe_create_index(db.products, "store_id")
+    await safe_create_index(db.products, "category")
+    await safe_create_index(db.products, "subcategory")
+    await safe_create_index(db.products, "active")
+    await safe_create_index(db.products, [("name", TEXT), ("description", TEXT), ("tags", TEXT)])
+    await safe_create_index(db.products, [("store_location", GEOSPHERE)])
+    await safe_create_index(db.products, "price.selling_price")
+    await safe_create_index(db.products, [("rating.average", DESCENDING)])
+    await safe_create_index(db.products, [("fit_confidence_avg", DESCENDING)])
+    await safe_create_index(db.products, [("created_at", DESCENDING)])
     print("  - products indexes (geo + text + compound)")
 
     # ── orders ─────────────────────────────────────────────────────
-    await db.orders.create_index("user_id")
-    await db.orders.create_index("store_id")
-    await db.orders.create_index("status")
-    await db.orders.create_index([("created_at", DESCENDING)])
-    await db.orders.create_index("order_number", unique=True)
+    await safe_create_index(db.orders, "user_id")
+    await safe_create_index(db.orders, "store_id")
+    await safe_create_index(db.orders, "status")
+    await safe_create_index(db.orders, [("created_at", DESCENDING)])
+    await safe_create_index(db.orders, "order_number", unique=True)
     print("  - orders indexes")
 
     # ── stores (boutiques) ────────────────────────────────────────
-    await db.stores.create_index([("location", GEOSPHERE)])
-    await db.stores.create_index("active")
-    await db.stores.create_index("owner_id")
-    await db.stores.create_index([("name", TEXT)])
+    await safe_create_index(db.stores, [("location", GEOSPHERE)])
+    await safe_create_index(db.stores, "active")
+    await safe_create_index(db.stores, "owner_id")
+    await safe_create_index(db.stores, [("name", TEXT)])
     print("  - stores indexes (geo)")
 
     # ── tracking ──────────────────────────────────────────────────
-    await db.tracking.create_index("order_id", unique=True)
-    await db.tracking.create_index("rider_id")
-    await db.tracking.create_index("status")
+    await safe_create_index(db.tracking, "order_id", unique=True)
+    await safe_create_index(db.tracking, "rider_id")
+    await safe_create_index(db.tracking, "status")
     # TTL — auto-delete tracking docs 24h after delivery
-    await db.tracking.create_index(
+    await safe_create_index(db.tracking, 
         "delivered_at",
         expireAfterSeconds=86400,
         sparse=True
@@ -70,10 +65,10 @@ async def create_indexes(db: AsyncIOMotorDatabase):
     print("  - tracking indexes (TTL=24h)")
 
     # ── notifications ─────────────────────────────────────────────
-    await db.notifications.create_index("user_id")
-    await db.notifications.create_index([("sent_at", DESCENDING)])
+    await safe_create_index(db.notifications, "user_id")
+    await safe_create_index(db.notifications, [("sent_at", DESCENDING)])
     # TTL — auto-delete notifications after 30 days
-    await db.notifications.create_index(
+    await safe_create_index(db.notifications, 
         "sent_at",
         expireAfterSeconds=2592000
     )

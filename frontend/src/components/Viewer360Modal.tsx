@@ -3,7 +3,6 @@ import { motion, useMotionValue } from 'framer-motion';
 import { useDrag } from '@use-gesture/react';
 import { X, RotateCw, Sparkles, HelpCircle } from 'lucide-react';
 import type { Product } from '../types';
-import { getImageAsset } from './product/ProductCard';
 
 interface Viewer360ModalProps {
   product: Product | null;
@@ -106,7 +105,7 @@ export const Viewer360Modal: React.FC<Viewer360ModalProps> = ({ product, onClose
             >
               {/* Product Image Front */}
               <img
-                src={getImageAsset(product.id)}
+                src={product.image}
                 alt={product.name}
                 className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.15)] pointer-events-none select-none"
               />

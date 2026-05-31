@@ -44,7 +44,7 @@ class OrderResponse(BaseModel):
 MOCK_RIDERS = ["Arjun S.", "Priya M.", "Rahul K.", "Sneha T.", "Dev P."]
 
 
-@router.post("/", response_model=OrderResponse)
+@router.post("", response_model=OrderResponse)
 async def create_order(body: CreateOrderRequest):
     """Place a new order and initiate delivery dispatch."""
     order_id = generate_order_id()
