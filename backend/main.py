@@ -56,6 +56,11 @@ async def lifespan(app: FastAPI):
     db = get_db()
     await create_indexes(db)
     
+    # Check redis connection to determine fallback
+    from app.db.redis_client import redis_client
+    if hasattr(redis_client, "check_connection"):
+        await redis_client.check_connection()
+        
     # Start the background Redis Pub/Sub listener
     app.state.redis_listener = asyncio.create_task(redis_pubsub_listener())
     

@@ -16,6 +16,11 @@ from datetime import datetime, timezone
 from bson import ObjectId
 import hashlib
 
+from dotenv import load_dotenv
+
+# Load env variables from backend/.env
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
+
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://admin:quick_style_secret@mongodb:27017/quick_style_db?authSource=admin")
 DB_NAME = "quick_style_db"
 

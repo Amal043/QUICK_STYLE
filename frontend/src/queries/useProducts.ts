@@ -57,6 +57,21 @@ function resolveGallery(p: any): string[] {
 
 function resolve360Frames(p: any): string[] {
   const imgs = p.colors?.[0]?.images;
+  const main = imgs?.main || '';
+  if (p.colors?.[0]?.images?.has_360 && main && !main.includes('storage.googleapis.com')) {
+    const lastSlashIdx = main.lastIndexOf('/');
+    const lastDotIdx = main.lastIndexOf('.');
+    if (lastSlashIdx !== -1 && lastDotIdx !== -1) {
+      const dir = main.substring(0, lastSlashIdx);
+      const ext = main.substring(lastDotIdx);
+      const list = [];
+      for (let i = 0; i < 24; i++) {
+        const num = i < 10 ? `0${i}` : `${i}`;
+        list.push(`${dir}/frame_${num}${ext}`);
+      }
+      return list;
+    }
+  }
   if (imgs?.frames_360?.length) {
     return imgs.frames_360.filter((u: string) => !u.includes('storage.googleapis.com'));
   }
