@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Zap, MapPin, Search, ShoppingBag, ChevronDown, Mic, MicOff, LayoutDashboard, User, Heart } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { getPreciseLocation } from '../../lib/geolocation';
 
 interface NavbarProps {
   cartCount: number;
@@ -48,9 +47,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   const handleRequestLocation = () => {
     setLocLoading(true);
     
-    getPreciseLocation(
-      async (coords) => {
-        const { lat, lng } = coords;
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      setLocation('📍 Kolkata, West Bengal');
+      setUserCoords({ lat: 22.4981, lng: 88.3653 });
+      setLocLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: lat, longitude: lng } = position.coords;
         setUserCoords({ lat, lng });
 
         // Nominatim reverse geocode
@@ -74,48 +81,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           console.warn(e);
         }
 
-        // Fallback to IP address city names
-        try {
-          const resp = await fetch('https://freeipapi.com/api/json');
-          if (resp.ok) {
-            const data = await resp.json();
-            if (data.cityName && data.regionName) {
-              setLocation(`📍 ${data.cityName}, ${data.regionName}`);
-              setLocLoading(false);
-              return;
-            }
-          }
-        } catch (e) {
-          console.warn(e);
-        }
-
-        // Local coordinates region check
+        // Local coordinates region check fallback
         const isKolkata = Math.abs(lat - 22.5) < 0.5 && Math.abs(lng - 88.3) < 0.5;
         setLocation(isKolkata ? '📍 Kolkata, West Bengal' : '📍 Jamshedpur, Jharkhand');
         setLocLoading(false);
       },
-      async (error) => {
+      (error) => {
         console.warn("[GEOLOCATION] Navbar geolocation error:", error);
-        try {
-          const resp = await fetch('https://freeipapi.com/api/json');
-          if (resp.ok) {
-            const data = await resp.json();
-            if (data.cityName && data.regionName) {
-              setLocation(`📍 ${data.cityName}, ${data.regionName}`);
-              const fallbackLat = data.latitude || 22.4981;
-              const fallbackLng = data.longitude || 88.3653;
-              setUserCoords({ lat: fallbackLat, lng: fallbackLng });
-              setLocLoading(false);
-              return;
-            }
-          }
-        } catch (e) {
-          console.warn(e);
-        }
+        alert("Could not detect your current location. Falling back to default (Kolkata).");
         setLocation('📍 Kolkata, West Bengal');
         setUserCoords({ lat: 22.4981, lng: 88.3653 });
         setLocLoading(false);
-      }
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 

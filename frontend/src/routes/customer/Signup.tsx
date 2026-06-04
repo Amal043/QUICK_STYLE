@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Mail, Lock, User, MapPin, Loader2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { getPreciseLocation } from '../../lib/geolocation';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -16,11 +15,18 @@ export default function Signup() {
 
   const handleAutoDetect = () => {
     setDetecting(true);
-    getPreciseLocation(
-      async (coords) => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser. Please enter your address manually.");
+      setDetecting(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
         try {
+          const { latitude, longitude } = position.coords;
           const resp = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${coords.lat}&lon=${coords.lng}&format=json`,
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
             { headers: { 'Accept-Language': 'en' } }
           );
           if (resp.ok) {
@@ -48,42 +54,15 @@ export default function Signup() {
         } catch (e) {
           console.warn(e);
         }
-
-        // Fallback to IP city/zip
-        try {
-          const resp = await fetch('https://freeipapi.com/api/json');
-          if (resp.ok) {
-            const data = await resp.json();
-            setFormData(prev => ({
-              ...prev,
-              city: data.cityName || prev.city,
-              pincode: data.zipCode || prev.pincode,
-              state: data.regionName || prev.state
-            }));
-          }
-        } catch (e) {
-          console.warn(e);
-        }
+        alert("Failed to resolve address from your current location coordinates. Please fill it manually.");
         setDetecting(false);
       },
-      async (error) => {
+      (error) => {
         console.warn("[GEOLOCATION] Geolocation failed:", error);
-        try {
-          const resp = await fetch('https://freeipapi.com/api/json');
-          if (resp.ok) {
-            const data = await resp.json();
-            setFormData(prev => ({
-              ...prev,
-              city: data.cityName || prev.city,
-              pincode: data.zipCode || prev.pincode,
-              state: data.regionName || prev.state
-            }));
-          }
-        } catch (e) {
-          console.warn(e);
-        }
+        alert("Could not detect your current location. Please allow browser location permissions or enter your address manually.");
         setDetecting(false);
-      }
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
