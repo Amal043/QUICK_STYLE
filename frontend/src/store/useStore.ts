@@ -19,6 +19,7 @@ interface AppState {
   userProfile: any;
   activeOrderId: string | null;
   userCoords: { lat: number; lng: number } | null;
+  orderHistory: any[];
   
   // Actions
   addToCart: (product: Product, size: Size) => void;
@@ -41,6 +42,7 @@ interface AppState {
   setUserProfile: (profile: any) => void;
   setActiveOrderId: (orderId: string | null) => void;
   setUserCoords: (coords: { lat: number; lng: number } | null) => void;
+  addOrderToHistory: (order: any) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -61,6 +63,7 @@ export const useStore = create<AppState>((set) => ({
   userProfile: null,
   activeOrderId: null,
   userCoords: null,
+  orderHistory: JSON.parse(localStorage.getItem('orderHistory') || '[]'),
 
   addToCart: (product, size) => set((state) => {
     const existingIndex = state.cart.findIndex(
@@ -137,4 +140,10 @@ export const useStore = create<AppState>((set) => ({
   setActiveOrderId: (orderId) => set({ activeOrderId: orderId }),
 
   setUserCoords: (coords) => set({ userCoords: coords }),
+
+  addOrderToHistory: (order) => set((state) => {
+    const updatedHistory = [order, ...state.orderHistory];
+    localStorage.setItem('orderHistory', JSON.stringify(updatedHistory));
+    return { orderHistory: updatedHistory };
+  }),
 }));

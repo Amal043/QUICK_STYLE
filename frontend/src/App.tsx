@@ -16,6 +16,7 @@ import OrderStatus from './routes/customer/OrderStatus';
 import Account from './routes/customer/Account';
 import Signup from './routes/customer/Signup';
 import Login from './routes/customer/Login';
+import History from './routes/customer/History';
 import AdminDashboard from './routes/admin/Dashboard';
 import AgentBrain from './routes/admin/AgentBrain';
 
@@ -43,6 +44,7 @@ function AppShell() {
     originHub,
     addToCart,
     setActiveOrderId,
+    addOrderToHistory,
   } = useStore();
   const navigate = useNavigate();
 
@@ -57,10 +59,30 @@ function AppShell() {
     setCouponApplied(couponApplied);
     setCouponDiscount(couponDiscount);
     setCartOpen(false);
-    clearCart();
     
-    // Generate Order ID and Navigate to Tracking Page
+    // Generate Order ID
     const orderId = `FW-${Math.floor(100000 + Math.random() * 900000)}`;
+    const totalAmount = cart.reduce((sum, item) => sum + item.product.price.selling_price * item.quantity, 0);
+    const finalAmount = couponApplied ? totalAmount - couponDiscount : totalAmount;
+
+    // Save order in history
+    addOrderToHistory({
+      orderId,
+      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      amount: Math.round(finalAmount),
+      items: cart.map(item => ({
+        id: item.product.id,
+        name: item.product.name,
+        image: item.product.image,
+        price: item.product.price.selling_price,
+        size: item.size,
+        quantity: item.quantity
+      })),
+      status: 'In Transit'
+    });
+
+    clearCart();
     setActiveOrderId(orderId);
     navigate(`/order-status?order_id=${orderId}`);
   };
@@ -95,6 +117,7 @@ function AppShell() {
           <Route path="/account" element={<Account />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/history" element={<History />} />
           <Route path="/admin/logs" element={<AdminDashboard />} />
           <Route path="/admin/brain" element={<AgentBrain />} />
 

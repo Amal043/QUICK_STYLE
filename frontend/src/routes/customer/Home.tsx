@@ -30,9 +30,9 @@ export default function Home({ onOpenSizingGuide }: HomeProps) {
 
   const categoryItems = [
     { id: '1', title: 'Must-Have Tees', subtitle: 'UNDER ₹ 499', image: '/photos/blazer_formal/main.png', link: '/collection?category=Streetwear' },
-    { id: '2', title: 'Cool T-Shirts', subtitle: 'UNDER ₹ 399', image: '/photos/tshirt_coral/main.png', link: '/collection?category=Activewear' },
-    { id: '3', title: 'Tailored Trousers', subtitle: 'UNDER ₹ 599', image: '/photos/dress_black_striped/main.jpg', link: '/collection?category=Editorial' },
-    { id: '4', title: 'Charming Dresses', subtitle: 'UNDER ₹ 499', image: '/photos/dress_brown_midi/main.jpg', link: '/collection?category=Streetwear' },
+    { id: '2', title: 'Cool T-Shirts', subtitle: 'UNDER ₹ 399', image: '/photos/cool_tshirt.png', link: '/collection?category=Activewear' },
+    { id: '3', title: 'Tailored Trousers', subtitle: 'UNDER ₹ 599', image: '/photos/tailored_trousers.png', link: '/collection?category=Editorial' },
+    { id: '4', title: 'Charming Dresses', subtitle: 'UNDER ₹ 499', image: '/photos/charming_dress.png', link: '/collection?category=Streetwear' },
     { id: '5', title: 'Suits & Blazers', subtitle: 'UNDER ₹ 2999', image: '/photos/blazer_formal/main.png', link: '/collection?category=Formals' },
     { id: '6', title: 'Hottest Handbags', subtitle: 'UNDER ₹ 1599', image: '/stitch/minaudiere.jpg', link: '/collection?category=Accessories' },
     { id: '7', title: 'Formal Footwear', subtitle: 'STARTING ₹ 799', image: '/stitch/noir_stiletto.jpg', link: '/collection?category=Runway' },
@@ -114,25 +114,39 @@ export default function Home({ onOpenSizingGuide }: HomeProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           {/* Promos */}
           <div className="flex flex-col gap-4">
+            {/* Promo 1: Flat 500 Off */}
             <div 
               onClick={() => navigate('/collection?min_discount=50')}
-              className="w-full bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl p-6 flex flex-col justify-center items-center cursor-pointer shadow-lg hover:scale-[1.02] transition-transform"
+              className="w-full bg-gradient-to-br from-surface-container-low to-surface-container-lowest border border-tertiary/20 rounded-2xl p-8 flex flex-col justify-center items-center text-center cursor-pointer shadow-xl transition-all duration-500 hover:scale-[1.01] hover:border-tertiary/40 hover:shadow-[0_0_30px_rgba(224,194,152,0.08)] group"
             >
-              <h3 className="font-display-lg text-white text-3xl md:text-5xl font-extrabold tracking-tight drop-shadow-md">FLAT ₹500 OFF</h3>
-              <p className="text-white/90 text-sm md:text-base mt-2 font-body-bold">On Your 1st Purchase</p>
+              <span className="font-label-caps text-tertiary text-[10px] tracking-[0.25em] mb-3 opacity-90 transition-all group-hover:tracking-[0.3em]">ATELIER PRIVILEGE</span>
+              <h3 className="font-display-lg text-white text-3xl md:text-4xl font-normal tracking-wide drop-shadow-md">
+                FLAT <span className="text-tertiary">₹500</span> OFF
+              </h3>
+              <p className="font-body-base text-on-surface-variant/80 text-xs md:text-sm mt-3 tracking-wider font-light">
+                Applied automatically on your first boutique purchase
+              </p>
             </div>
             
+            {/* Promo 2: Sale is Live */}
             <div 
               onClick={() => navigate('/collection?min_discount=50')}
-              className="w-full relative overflow-hidden rounded-2xl h-48 cursor-pointer shadow-lg hover:scale-[1.02] transition-transform bg-purple-900 group"
+              className="w-full relative overflow-hidden rounded-2xl h-[216px] cursor-pointer shadow-xl transition-all duration-500 hover:scale-[1.01] border border-outline-variant/30 group"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/40 to-purple-800/80 z-10"></div>
-              <img src="/stitch/fashion_video_4.png" alt="Sale is Live" className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" />
-              <div className="absolute inset-0 z-20 flex flex-col justify-center items-center text-center p-6">
-                <div className="border-4 border-white/80 p-2 md:p-4 rounded-xl backdrop-blur-sm bg-black/20">
-                  <h3 className="font-display-lg text-white text-3xl md:text-4xl font-extrabold tracking-widest drop-shadow-lg">SALE IS</h3>
-                  <h3 className="font-display-lg text-amber-400 text-4xl md:text-6xl font-extrabold tracking-widest drop-shadow-lg mt-1">LIVE</h3>
-                </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent z-10"></div>
+              <img 
+                src="/stitch/fashion_video_4.png" 
+                alt="Sale is Live" 
+                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-[1200ms] ease-out" 
+              />
+              <div className="absolute inset-0 z-20 flex flex-col justify-end p-8">
+                <span className="font-label-caps text-tertiary text-[10px] tracking-[0.25em] mb-1 opacity-90">THE APEX EVENT</span>
+                <h3 className="font-display-lg text-white text-2xl md:text-3xl font-normal tracking-wide">
+                  SEASONAL SALE IS <span className="text-tertiary italic font-display-md">LIVE</span>
+                </h3>
+                <p className="font-body-base text-white/60 text-xs mt-2 max-w-md font-light tracking-wide">
+                  Exclusive access to archive styles and bespoke tailoring up to 50% off
+                </p>
               </div>
             </div>
           </div>

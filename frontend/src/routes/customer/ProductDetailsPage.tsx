@@ -266,6 +266,11 @@ export default function ProductDetailsPage() {
   const [selectedSize, setSelectedSize] = useState<Size | ''>('');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
+  // Scroll to top when product ID changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [id]);
+
   const { data: product, isLoading, isError } = useQuery<Product>({
     queryKey: ['product', id],
     queryFn: async () => {

@@ -246,7 +246,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             {(isLoggedIn || adminMode) && (
-              <Link to="/account" className={`hover:text-coral transition-colors ${location.pathname === '/account' ? 'text-coral' : ''}`}>Account</Link>
+              <>
+                <Link to="/history" className={`hover:text-coral transition-colors ${location.pathname === '/history' ? 'text-coral' : ''}`}>History</Link>
+                <Link to="/account" className={`hover:text-coral transition-colors ${location.pathname === '/account' ? 'text-coral' : ''}`}>Account</Link>
+              </>
             )}
 
             {adminMode && (

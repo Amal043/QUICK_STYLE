@@ -5,14 +5,31 @@ import { useStore } from '../../store/useStore';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { setIsLoggedIn, setAdminMode } = useStore();
+  const { setIsLoggedIn, setAdminMode, setUserProfile } = useStore();
   const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.email === 'admin@quickstyle.io') {
+    const isAdmin = formData.email === 'admin@quickstyle.io';
+    if (isAdmin) {
       setAdminMode(true);
     }
+    setUserProfile({
+      name: isAdmin ? 'ADMIN USER' : formData.email.split('@')[0].toUpperCase(),
+      email: formData.email,
+      phone: '9876543210',
+      addresses: [
+        {
+          label: 'Primary Address',
+          street: '12 Luxury Boulevard',
+          area: 'Salt Lake Sector V',
+          city: 'Kolkata',
+          pincode: '700091',
+          state: 'West Bengal',
+          is_default: true
+        }
+      ]
+    });
     setIsLoggedIn(true);
     navigate('/');
   };
@@ -31,11 +48,11 @@ export default function Login() {
           <div className="space-y-4 animate-fade-in">
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input required type="email" placeholder="Email Address" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 pl-10 text-sm focus:outline-none focus:border-coral" />
+              <input required type="email" placeholder="Email Address" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 pl-10 text-sm text-gray-900 focus:outline-none focus:border-coral" />
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input required type="password" placeholder="Password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 pl-10 text-sm focus:outline-none focus:border-coral" />
+              <input required type="password" placeholder="Password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 pl-10 text-sm text-gray-900 focus:outline-none focus:border-coral" />
             </div>
           </div>
 
