@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Truck, Check, Store, Home, PackageSearch, Phone } from 'lucide-react';
-import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, OverlayView } from '@react-google-maps/api';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useStore } from '../../store/useStore';
 
 const locations = {
@@ -11,23 +12,52 @@ const locations = {
   boutiqueD: { lat: 22.5726, lng: 88.4633 }
 };
 
-const scooterIconSvg = "M21.1 12.5l-2.2-2.2c-.3-.3-.7-.5-1.1-.5h-2.3l-2.1-4.2c-.2-.4-.6-.7-1.1-.7H8.8c-.8 0-1.5.7-1.5 1.5v5H5.8c-1.3 0-2.3 1-2.3 2.3v.5c0 1.2.9 2.2 2.1 2.3.2 1.3 1.3 2.3 2.6 2.3s2.4-1 2.6-2.3h5.4c.2 1.3 1.3 2.3 2.6 2.3 1.5 0 2.8-1.2 2.8-2.8v-1c0-.4-.2-.8-.5-1.1zM8.2 17.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zm10.6 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zm-5-4.2h-5v-7h3.5l1.5 3h1.8l1.3 2.6c.1.2.1.4.1.6v.8h-3.2z";
+const interpolatePoints = (start: { lat: number; lng: number }, end: { lat: number; lng: number }, steps = 100): [number, number][] => {
+  const points: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const lat = start.lat + (end.lat - start.lat) * t;
+    const lng = start.lng + (end.lng - start.lng) * t;
+    points.push([lat, lng]);
+  }
+  return points;
+};
+
+const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: number; lng: number }) => {
+  try {
+    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`);
+    if (!res.ok) throw new Error("OSRM routing failed");
+    const data = await res.json();
+    const route = data.routes[0];
+    if (route) {
+      const coordinates = route.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
+      const durationSeconds = route.duration;
+      const durationMinutes = Math.max(1, Math.round(durationSeconds / 60));
+      return {
+        coordinates,
+        durationText: `${durationMinutes} MIN`
+      };
+    }
+  } catch (error) {
+    console.warn("Failed to fetch OSRM route, falling back to straight-line interpolation:", error);
+  }
+  return {
+    coordinates: interpolatePoints(start, end, 50),
+    durationText: "8 MIN"
+  };
+};
 
 export default function OrderStatus() {
   const { originHub, activeOrderId } = useStore();
 
   const [phase, setPhase] = useState("assigning");
+  const [activePhase, setActivePhase] = useState("assigning");
   const [statusMessage, setStatusMessage] = useState("Connecting with local courier network...");
   const [partner, setPartner] = useState<any>(null);
   
-  const [dirPartnerToStore, setDirPartnerToStore] = useState<google.maps.DirectionsResult | null>(null);
-  const [dirStoreToHome, setDirStoreToHome] = useState<google.maps.DirectionsResult | null>(null);
+  const [partnerRoute, setPartnerRoute] = useState<[number, number][]>([]);
+  const [storeRoute, setStoreRoute] = useState<[number, number][]>([]);
   const [etaText, setEtaText] = useState("CALCULATING");
-
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""
-  });
 
   const getBoutiqueCoords = () => {
     if (originHub.includes('Park Street')) return locations.boutiqueB;
@@ -43,85 +73,111 @@ export default function OrderStatus() {
   const initialPartnerPos = { lat: storeCoords.lat - 0.005, lng: storeCoords.lng - 0.005 };
 
   const [courierPos] = useState({ lat: initialPartnerPos.lat, lng: initialPartnerPos.lng });
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const markerOverlayRef = useRef<any>(null); // Native OverlayView reference
-  const animationRef = useRef<number>();
   
-  // Custom Native Overlay for the Biker Marker to bypass React DOM lifecycle
-  const createBikerOverlay = (map: google.maps.Map) => {
-    class BikerOverlay extends window.google.maps.OverlayView {
-      position: google.maps.LatLng;
-      div: HTMLDivElement | null;
-      rotation: number;
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const bikerMarkerRef = useRef<L.Marker | null>(null);
+  const partnerPolylineRef = useRef<L.Polyline | null>(null);
+  const storePolylineRef = useRef<L.Polyline | null>(null);
+  const animationRef = useRef<number>();
 
-      constructor(position: google.maps.LatLng) {
-        super();
-        this.position = position;
-        this.div = null;
-        this.rotation = 0;
-      }
+  const isHeadingToStore = phase === "assigning" || phase === "heading_to_store" || phase === "packing";
 
-      onAdd() {
-        this.div = document.createElement('div');
-        this.div.style.position = 'absolute';
-        this.div.style.transform = 'translate(-50%, -50%)';
-        this.div.style.display = 'flex';
-        this.div.style.flexDirection = 'column';
-        this.div.style.alignItems = 'center';
-        
-        // Add ETA bubble
-        const etaBubble = document.createElement('div');
-        etaBubble.className = 'bg-[#2C3440] text-white text-[11px] font-extrabold px-3 py-1.5 rounded-lg shadow-xl mb-1.5 whitespace-nowrap tracking-wide';
-        etaBubble.id = 'eta-bubble';
-        etaBubble.innerText = 'ETA: CALCULATING';
-        this.div.appendChild(etaBubble);
-        
-        // Add the genuine background-less biker image we generated
-        const img = document.createElement('img');
-        img.src = '/images/biker_marker.png';
-        img.style.width = '50px';
-        img.style.height = '50px';
-        img.style.transition = 'none'; // Controlled by JS
-        img.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.4))';
-        img.id = 'biker-img';
-        
-        this.div.appendChild(img);
-        
-        const panes = this.getPanes();
-        panes?.overlayMouseTarget.appendChild(this.div);
-      }
+  // Fetch routes from OSRM
+  useEffect(() => {
+    const fetchAllRoutes = async () => {
+      const resPartner = await fetchRoute(initialPartnerPos, storeCoords);
+      setPartnerRoute(resPartner.coordinates);
 
-      draw() {
-        if (!this.div) return;
-        const overlayProjection = this.getProjection();
-        const pos = overlayProjection.fromLatLngToDivPixel(this.position);
-        if (pos) {
-          this.div.style.left = pos.x + 'px';
-          this.div.style.top = pos.y + 'px';
-          // Rotate the image element itself, keep ETA bubble upright
-          const img = this.div.querySelector('#biker-img') as HTMLImageElement;
-          if (img) img.style.transform = `rotate(${this.rotation}deg)`;
-        }
-      }
+      const resStore = await fetchRoute(storeCoords, homeCoords);
+      setStoreRoute(resStore.coordinates);
+      setEtaText(resStore.durationText);
+    };
 
-      onRemove() {
-        if (this.div) {
-          this.div.parentNode?.removeChild(this.div);
-          this.div = null;
-        }
-      }
+    fetchAllRoutes();
+  }, [originHub]);
 
-      updatePosition(newLatLng: google.maps.LatLng, heading: number) {
-        this.position = newLatLng;
-        this.rotation = heading;
-        this.draw();
-      }
+  // Initialize Map
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    const map = L.map(mapContainerRef.current, {
+      zoomControl: false,
+      attributionControl: false
+    }).setView([initialPartnerPos.lat, initialPartnerPos.lng], 14);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+
+    // Store Marker (Modern Dark Pin)
+    const storeIcon = L.divIcon({
+      html: `<div style="background-color: #1e293b; color: white; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"><span class="material-symbols-outlined text-[16px]">store</span></div>`,
+      className: 'store-marker-icon',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    });
+    L.marker([storeCoords.lat, storeCoords.lng], { icon: storeIcon }).addTo(map);
+
+    // Home Marker (Modern Dark Pin)
+    const homeIcon = L.divIcon({
+      html: `<div style="background-color: #5a1a1a; color: white; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"><span class="material-symbols-outlined text-[16px]">home</span></div>`,
+      className: 'home-marker-icon',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    });
+    L.marker([homeCoords.lat, homeCoords.lng], { icon: homeIcon }).addTo(map);
+
+    // Biker Marker (Custom HTML divIcon)
+    const bikerIcon = L.divIcon({
+      html: `
+        <div style="position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+          <div id="eta-bubble-leaflet" class="bg-[#2C3440] text-white text-[11px] font-extrabold px-3 py-1.5 rounded-lg shadow-xl mb-1.5 whitespace-nowrap tracking-wide">
+            ETA: CALCULATING
+          </div>
+          <img id="biker-img-leaflet" src="/images/biker_marker.png" style="width: 50px; height: 50px; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.4)); transition: none;" />
+        </div>
+      `,
+      className: 'biker-marker-icon',
+      iconSize: [50, 80],
+      iconAnchor: [25, 65]
+    });
+
+    const biker = L.marker([initialPartnerPos.lat, initialPartnerPos.lng], { icon: bikerIcon }).addTo(map);
+    bikerMarkerRef.current = biker;
+
+    partnerPolylineRef.current = L.polyline([], { color: '#0066FF', weight: 6, opacity: 0.9 }).addTo(map);
+    storePolylineRef.current = L.polyline([], { color: '#CBD5E1', weight: 6, opacity: 0.9 }).addTo(map);
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, [storeCoords]);
+
+  // Update polylines path
+  useEffect(() => {
+    if (partnerPolylineRef.current) {
+      partnerPolylineRef.current.setLatLngs(isHeadingToStore ? partnerRoute : []);
     }
+  }, [partnerRoute, isHeadingToStore]);
 
-    const overlay = new BikerOverlay(new window.google.maps.LatLng(initialPartnerPos.lat, initialPartnerPos.lng));
-    overlay.setMap(map);
-    return overlay;
-  };
+  useEffect(() => {
+    if (storePolylineRef.current) {
+      storePolylineRef.current.setLatLngs(storeRoute);
+      storePolylineRef.current.setStyle({
+        color: isHeadingToStore ? '#CBD5E1' : '#0066FF'
+      });
+    }
+  }, [storeRoute, isHeadingToStore]);
+
+  // Update ETA text in leaflet bubble
+  useEffect(() => {
+    const bubble = document.getElementById('eta-bubble-leaflet');
+    if (bubble) bubble.innerText = `ETA: ${etaText}`;
+  }, [etaText]);
 
   const calculateBearing = (startLat: number, startLng: number, endLat: number, endLng: number) => {
     const dLng = (endLng - startLng) * Math.PI / 180;
@@ -135,91 +191,54 @@ export default function OrderStatus() {
     return (brng + 360) % 360;
   };
 
-  // Fetch routes
-  useEffect(() => {
-    if (!isLoaded) return;
-    const directionsService = new window.google.maps.DirectionsService();
-    
-    // Partner -> Store
-    directionsService.route(
-      { origin: initialPartnerPos, destination: storeCoords, travelMode: window.google.maps.TravelMode.DRIVING },
-      (result, status) => { if (status === window.google.maps.DirectionsStatus.OK) setDirPartnerToStore(result); }
-    );
-
-    // Store -> Home
-    directionsService.route(
-      { origin: storeCoords, destination: homeCoords, travelMode: window.google.maps.TravelMode.DRIVING },
-      (result, status) => { 
-        if (status === window.google.maps.DirectionsStatus.OK && result) {
-          setDirStoreToHome(result);
-          const duration = result.routes[0]?.legs[0]?.duration?.text;
-          if (duration) {
-            setEtaText(duration.toUpperCase());
-            // Update native overlay if it exists
-            if (markerOverlayRef.current && markerOverlayRef.current.div) {
-              const etaEl = markerOverlayRef.current.div.querySelector('#eta-bubble');
-              if (etaEl) etaEl.innerText = `ETA: ${duration.toUpperCase()}`;
-            }
-          }
-        }
-      }
-    );
-  }, [isLoaded, storeCoords]);
-
-  // Smooth animation function (Linear Interpolation + Bearing)
-  const animateMarker = (routeParams: google.maps.DirectionsResult, durationMs: number) => {
-    const route = routeParams.routes[0];
-    if (!route || !markerOverlayRef.current) return;
-    const path = route.overview_path;
+  const animateMarker = (coordinates: [number, number][], durationMs: number) => {
+    if (coordinates.length === 0) return;
     const startTime = performance.now();
-
-    let lastLat = markerOverlayRef.current.position.lat();
-    let lastLng = markerOverlayRef.current.position.lng();
+    let lastLat = coordinates[0][0];
+    let lastLng = coordinates[0][1];
 
     const animate = (currentTime: number) => {
-      if (!markerOverlayRef.current) return;
-      
+      if (!mapInstanceRef.current || !bikerMarkerRef.current) return;
+
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / durationMs, 1);
-      
-      const exactIdx = progress * (path.length - 1);
+
+      const exactIdx = progress * (coordinates.length - 1);
       const lowerIdx = Math.floor(exactIdx);
-      const upperIdx = Math.min(lowerIdx + 1, path.length - 1);
+      const upperIdx = Math.min(lowerIdx + 1, coordinates.length - 1);
       const t = exactIdx - lowerIdx;
 
-      const p1 = path[lowerIdx];
-      const p2 = path[upperIdx];
+      const p1 = coordinates[lowerIdx];
+      const p2 = coordinates[upperIdx];
 
-      const lat = p1.lat() + (p2.lat() - p1.lat()) * t;
-      const lng = p1.lng() + (p2.lng() - p1.lng()) * t;
+      const lat = p1[0] + (p2[0] - p1[0]) * t;
+      const lng = p1[1] + (p2[1] - p1[1]) * t;
 
-      // Calculate bearing dynamically
       const heading = calculateBearing(lastLat, lastLng, lat, lng);
-      
-      // Update our stored coords for the next frame's bearing calculation
+
       if (Math.abs(lat - lastLat) > 0.00001 || Math.abs(lng - lastLng) > 0.00001) {
-          lastLat = lat;
-          lastLng = lng;
+        lastLat = lat;
+        lastLng = lng;
       }
 
-      // Mutate native element directly, bypassing React state
-      const currentLatLng = new window.google.maps.LatLng(lat, lng);
-      markerOverlayRef.current.updatePosition(currentLatLng, heading);
-      
-      // Smoothly pan map to follow
-      if (mapRef.current) {
-         mapRef.current.panTo(currentLatLng);
-      }
+      const currentLatLng: [number, number] = [lat, lng];
+      bikerMarkerRef.current.setLatLng(currentLatLng);
+
+      const img = document.getElementById('biker-img-leaflet') as HTMLImageElement;
+      if (img) img.style.transform = `rotate(${heading}deg)`;
+
+      mapInstanceRef.current.panTo(currentLatLng);
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
       }
     };
-    
+
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
     animationRef.current = requestAnimationFrame(animate);
   };
 
+  // WebSocket Live Updates
   useEffect(() => {
     if (!activeOrderId) return;
 
@@ -232,14 +251,8 @@ export default function OrderStatus() {
         const data = JSON.parse(event.data);
         setStatusMessage(data.status);
         setPhase(data.phase);
+        setActivePhase(data.phase);
         if (data.partner) setPartner(data.partner);
-
-        // Trigger animations based on phase
-        if (data.phase === "heading_to_store" && dirPartnerToStore) {
-          animateMarker(dirPartnerToStore, data.duration || 3000);
-        } else if (data.phase === "delivering" && dirStoreToHome) {
-          animateMarker(dirStoreToHome, data.duration || 4000);
-        }
       } catch (err) {
         console.error('WebSocket msg error', err);
       }
@@ -249,7 +262,16 @@ export default function OrderStatus() {
       ws.close();
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [activeOrderId, dirPartnerToStore, dirStoreToHome]);
+  }, [activeOrderId]);
+
+  // Handle phase triggers for animation
+  useEffect(() => {
+    if (activePhase === "heading_to_store" && partnerRoute.length > 0) {
+      animateMarker(partnerRoute, 12000);
+    } else if (activePhase === "delivering" && storeRoute.length > 0) {
+      animateMarker(storeRoute, 15000);
+    }
+  }, [activePhase, partnerRoute, storeRoute]);
 
   if (!activeOrderId) {
     return (
@@ -260,8 +282,6 @@ export default function OrderStatus() {
       </div>
     );
   }
-
-  const isHeadingToStore = phase === "assigning" || phase === "heading_to_store" || phase === "packing";
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 animate-fade-in">
@@ -279,56 +299,12 @@ export default function OrderStatus() {
           </div>
         </div>
 
-        {/* 2-Column Layout for Laptop */}
+        {/* 2-Column Layout */}
         <div className="flex flex-col lg:flex-row">
           
-          {/* Left: Map */}
+          {/* Left: Leaflet Map Container */}
           <div className="w-full lg:w-2/3 h-[500px] relative bg-gray-100 border-r border-gray-100">
-            {isLoaded ? (
-              <GoogleMap
-                mapContainerStyle={{ width: '100%', height: '100%' }}
-                center={courierPos}
-                zoom={14}
-                onLoad={map => { 
-                  mapRef.current = map;
-                  markerOverlayRef.current = createBikerOverlay(map);
-                }}
-                options={{
-                  disableDefaultUI: true,
-                  styles: [
-                    { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
-                    { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-                    { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-                    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
-                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-                    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9c9c9' }] }
-                  ]
-                }}
-              >
-                {/* Store -> Home Route */}
-                {dirStoreToHome && (
-                  <DirectionsRenderer 
-                    directions={dirStoreToHome} 
-                    options={{ suppressMarkers: true, polylineOptions: { strokeColor: isHeadingToStore ? '#CBD5E1' : '#0066FF', strokeWeight: 6, strokeOpacity: 0.9 } }} 
-                  />
-                )}
-
-                {/* Partner -> Store Route */}
-                {isHeadingToStore && dirPartnerToStore && (
-                  <DirectionsRenderer 
-                    directions={dirPartnerToStore} 
-                    options={{ suppressMarkers: true, polylineOptions: { strokeColor: '#0066FF', strokeWeight: 6, strokeOpacity: 0.9 } }} 
-                  />
-                )}
-
-                <Marker position={storeCoords} icon={{ path: "M0-20 A10 10 0 0 0 -10 -10 C -10 -3 0 10 0 10 C 0 10 10 -3 10 -10 A10 10 0 0 0 0 -20 Z", fillColor: '#1e293b', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2, scale: 0.8 }} />
-                <Marker position={homeCoords} icon={{ path: "M0-20 A10 10 0 0 0 -10 -10 C -10 -3 0 10 0 10 C 0 10 10 -3 10 -10 A10 10 0 0 0 0 -20 Z", fillColor: '#1e293b', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2, scale: 0.8 }} />
-
-                {/* Removed React OverlayView to use our Native High-Performance Overlay instead! */}
-              </GoogleMap>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400 font-medium">Loading Interactive Map...</div>
-            )}
+            <div ref={mapContainerRef} className="w-full h-full" />
           </div>
 
           {/* Right: Order Status Details */}
@@ -387,4 +363,3 @@ export default function OrderStatus() {
     </div>
   );
 }
-
