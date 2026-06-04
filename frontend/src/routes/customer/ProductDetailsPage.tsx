@@ -104,6 +104,11 @@ const AI_MODEL_VIEWS: Record<string, { src: string; label: string }[]> = {
     { src: '/ai-models/minaudiere_side.png',  label: 'Side View' },
     { src: '/ai-models/minaudiere_back.png',  label: 'Back View' },
   ],
+  obsidian_gown: [
+    { src: '/ai-models/obsidian_gown_front.jpg', label: 'Front View' },
+    { src: '/ai-models/obsidian_gown_side.jpg',  label: 'Side View' },
+    { src: '/ai-models/obsidian_gown_back.jpg',  label: 'Back View' },
+  ],
   // fallback uses tshirt models
   default: [
     { src: '/ai-models/tshirt_front.png', label: 'Front View' },
@@ -118,7 +123,7 @@ function getModelViews(product: Product): { src: string; label: string }[] {
 
   // 1. Explicit mappings for all catalog items in the database:
   if (name.includes('obsidian gown')) {
-    return AI_MODEL_VIEWS.black_dress;
+    return AI_MODEL_VIEWS.obsidian_gown;
   }
   if (name.includes('obsidian ribbed knit') || name.includes('ribbed knit')) {
     return AI_MODEL_VIEWS.obsidian_ribbed_knit;
