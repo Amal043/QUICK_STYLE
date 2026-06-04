@@ -79,6 +79,31 @@ const AI_MODEL_VIEWS: Record<string, { src: string; label: string }[]> = {
     { src: '/ai-models/striped_dress_side.png',  label: 'Side View' },
     { src: '/ai-models/striped_dress_back.png',  label: 'Back View' },
   ],
+  trousers: [
+    { src: '/ai-models/trousers_front.png', label: 'Front View' },
+    { src: '/ai-models/trousers_side.png',  label: 'Side View' },
+    { src: '/ai-models/trousers_back.png',  label: 'Back View' },
+  ],
+  combat_boot: [
+    { src: '/ai-models/boot_front.png', label: 'Front View' },
+    { src: '/ai-models/boot_side.png',  label: 'Side View' },
+    { src: '/ai-models/boot_back.png',  label: 'Back View' },
+  ],
+  stiletto: [
+    { src: '/ai-models/stiletto_front.png', label: 'Front View' },
+    { src: '/ai-models/stiletto_side.png',  label: 'Side View' },
+    { src: '/ai-models/stiletto_back.png',  label: 'Back View' },
+  ],
+  cuff: [
+    { src: '/ai-models/cuff_front.png', label: 'Front View' },
+    { src: '/ai-models/cuff_side.png',  label: 'Side View' },
+    { src: '/ai-models/cuff_back.png',  label: 'Back View' },
+  ],
+  minaudiere: [
+    { src: '/ai-models/minaudiere_front.png', label: 'Front View' },
+    { src: '/ai-models/minaudiere_side.png',  label: 'Side View' },
+    { src: '/ai-models/minaudiere_back.png',  label: 'Back View' },
+  ],
   // fallback uses tshirt models
   default: [
     { src: '/ai-models/tshirt_front.png', label: 'Front View' },
@@ -107,8 +132,20 @@ function getModelViews(product: Product): { src: string; label: string }[] {
   if (name.includes('silk drape tunic') || name.includes('silk tunic') || name.includes('tunic')) {
     return AI_MODEL_VIEWS.silk_tunic;
   }
-  if (name.includes('precision cut trousers') || name.includes('trousers') || name.includes('pants')) {
-    return AI_MODEL_VIEWS.blazer; // uses the blazer/trousers model
+  if (name.includes('precision cut trousers') || name.includes('trousers') || name.includes('pants') || name.includes('tailored')) {
+    return AI_MODEL_VIEWS.trousers;
+  }
+  if (name.includes('monolith combat boot') || name.includes('combat boot') || name.includes('boot')) {
+    return AI_MODEL_VIEWS.combat_boot;
+  }
+  if (name.includes('noir stiletto') || name.includes('stiletto') || name.includes('heel') || name.includes('shoe')) {
+    return AI_MODEL_VIEWS.stiletto;
+  }
+  if (name.includes('architectural cuff') || name.includes('cuff') || name.includes('bracelet')) {
+    return AI_MODEL_VIEWS.cuff;
+  }
+  if (name.includes('minimalist minaudiere') || name.includes('minaudiere') || name.includes('bag') || name.includes('clutch')) {
+    return AI_MODEL_VIEWS.minaudiere;
   }
   if (name.includes('apex tech hoodie') || name.includes('apex')) {
     return AI_MODEL_VIEWS.apex_tech_hoodie;
@@ -119,21 +156,20 @@ function getModelViews(product: Product): { src: string; label: string }[] {
   if (name.includes('amethyst knit sweater') || name.includes('amethyst') || name.includes('sweater')) {
     return AI_MODEL_VIEWS.amethyst_knit_sweater;
   }
-  if (name.includes('aero-knit activewear tee') || name.includes('activewear tee') || name.includes('aero-knit')) {
+  if (name.includes('aero-knit activewear tee') || name.includes('activewear tee') || name.includes('aero-knit') || name.includes('cool tshirt')) {
     return AI_MODEL_VIEWS.tshirt; // the coral tshirt
   }
   if (name.includes('obsidian formal blazer') || name.includes('formal blazer')) {
     return AI_MODEL_VIEWS.blazer;
   }
-  if (name.includes('honky tonky') || name.includes('striped dress')) {
+  if (name.includes('honky tonky') || name.includes('striped dress') || name.includes('charming dress')) {
     return AI_MODEL_VIEWS.striped_dress;
   }
   if (name.includes('trendy aayu') || name.includes('brown midi') || name.includes('brown dress')) {
     return AI_MODEL_VIEWS.brown_dress;
   }
-  // The V-MART product shows a grey shirt in its main images, so map it to the grey shirt views
   if (name.includes('v-mart') || name.includes('light blue dress')) {
-    return AI_MODEL_VIEWS.grey_shirt;
+    return AI_MODEL_VIEWS.blue_dress;
   }
 
   // 2. Keyword-based matching fallbacks
@@ -169,10 +205,11 @@ function getModelViews(product: Product): { src: string; label: string }[] {
   // 3. Category/Accessory fallbacks
   const cat = category.toLowerCase();
   if (cat.includes('accessories') || name.includes('cuff') || name.includes('bag') || name.includes('minaudiere')) {
-    return AI_MODEL_VIEWS.blazer; // elegant backdrop
+    return AI_MODEL_VIEWS.minaudiere;
   }
   if (cat.includes('footwear') || name.includes('boot') || name.includes('stiletto') || name.includes('shoe')) {
-    if (name.includes('stiletto') || name.includes('heel')) return AI_MODEL_VIEWS.black_dress;
+    if (name.includes('stiletto') || name.includes('heel')) return AI_MODEL_VIEWS.stiletto;
+    if (name.includes('boot')) return AI_MODEL_VIEWS.combat_boot;
     return AI_MODEL_VIEWS.default;
   }
 
