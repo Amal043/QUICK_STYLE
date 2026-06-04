@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Truck, Check, Store, Home, PackageSearch, Phone } from 'lucide-react';
+import { Truck, Check, Store, Home, PackageSearch, Phone, MapPin } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useStore } from '../../store/useStore';
