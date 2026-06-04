@@ -139,7 +139,7 @@ export default function History() {
                 <div className="px-6 py-4 bg-gray-50/20 border-t border-panelBorder/50 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
                     <MapPin className="w-4 h-4 text-coral" />
-                    <span>Delivered to NIT Jamshedpur Campus</span>
+                    <span>{order.address ? `Delivered to ${order.address}` : "Delivered to registered location"}</span>
                   </div>
                   
                   <button

@@ -54,12 +54,12 @@ export default function Signup() {
         } catch (e) {
           console.warn(e);
         }
-        alert("Failed to resolve address from your current location coordinates. Please fill it manually.");
+        alert("Can't fetch current location");
         setDetecting(false);
       },
       (error) => {
         console.warn("[GEOLOCATION] Geolocation failed:", error);
-        alert("Could not detect your current location. Please allow browser location permissions or enter your address manually.");
+        alert("Can't fetch current location");
         setDetecting(false);
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }

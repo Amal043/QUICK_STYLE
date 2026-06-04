@@ -48,7 +48,7 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
 };
 
 export default function OrderStatus() {
-  const { originHub, activeOrderId } = useStore();
+  const { originHub, activeOrderId, userCoords } = useStore();
 
   const [phase, setPhase] = useState("assigning");
   const [activePhase, setActivePhase] = useState("assigning");
@@ -67,7 +67,7 @@ export default function OrderStatus() {
   };
 
   const storeCoords = getBoutiqueCoords();
-  const homeCoords = locations.jadavpur;
+  const homeCoords = userCoords || locations.jadavpur;
   
   // Dummy initial partner position for demo (slightly offset from store)
   const initialPartnerPos = { lat: storeCoords.lat - 0.005, lng: storeCoords.lng - 0.005 };
@@ -85,6 +85,7 @@ export default function OrderStatus() {
 
   // Fetch routes from OSRM
   useEffect(() => {
+    if (!userCoords) return;
     const fetchAllRoutes = async () => {
       const resPartner = await fetchRoute(initialPartnerPos, storeCoords);
       setPartnerRoute(resPartner.coordinates);
@@ -95,11 +96,11 @@ export default function OrderStatus() {
     };
 
     fetchAllRoutes();
-  }, [originHub]);
+  }, [originHub, userCoords]);
 
   // Initialize Map
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!userCoords || !mapContainerRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
@@ -302,9 +303,19 @@ export default function OrderStatus() {
         {/* 2-Column Layout */}
         <div className="flex flex-col lg:flex-row">
           
-          {/* Left: Leaflet Map Container */}
+          {/* Left: Leaflet Map Container or Location Notice */}
           <div className="w-full lg:w-2/3 h-[500px] relative bg-gray-100 border-r border-gray-100">
-            <div ref={mapContainerRef} className="w-full h-full" />
+            {userCoords ? (
+              <div ref={mapContainerRef} className="w-full h-full" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-gray-50 p-8 text-center">
+                <MapPin className="w-12 h-12 text-gray-300 mb-3" />
+                <h3 className="font-bold text-gray-800 text-lg">Live Map Tracking Unavailable</h3>
+                <p className="text-xs text-gray-500 mt-2 max-w-sm leading-relaxed">
+                  To view live shipping routes and delivery partner tracking, please select or detect your current delivery location in the navigation bar.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Right: Order Status Details */}

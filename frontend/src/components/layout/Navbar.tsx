@@ -81,16 +81,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           console.warn(e);
         }
 
-        // Local coordinates region check fallback
-        const isKolkata = Math.abs(lat - 22.5) < 0.5 && Math.abs(lng - 88.3) < 0.5;
-        setLocation(isKolkata ? '📍 Kolkata, West Bengal' : '📍 Jamshedpur, Jharkhand');
+        // Coordinates fallback if Nominatim geocoding fails
+        setLocation(`📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
         setLocLoading(false);
       },
       (error) => {
         console.warn("[GEOLOCATION] Navbar geolocation error:", error);
-        alert("Could not detect your current location. Falling back to default (Kolkata).");
-        setLocation('📍 Kolkata, West Bengal');
-        setUserCoords({ lat: 22.4981, lng: 88.3653 });
+        setLocation("Can't fetch current location");
+        setUserCoords(null);
         setLocLoading(false);
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }

@@ -71,6 +71,7 @@ function AppShell() {
       date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
       time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
       amount: Math.round(finalAmount),
+      address: useStore.getState().currentLocation !== 'Select Location' ? useStore.getState().currentLocation.replace('📍 ', '') : 'Registered Address',
       items: cart.map(item => ({
         id: item.product.id,
         name: item.product.name,
