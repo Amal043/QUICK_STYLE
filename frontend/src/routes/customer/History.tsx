@@ -67,8 +67,12 @@ export default function History() {
       ) : (
         /* Orders List */
         <div className="space-y-6">
-          {orderHistory.map((order: any) => {
-            const isActive = activeOrderId === order.orderId;
+          {[...orderHistory].sort((a, b) => {
+            const dateA = new Date(`${a.date} ${a.time}`);
+            const dateB = new Date(`${b.date} ${b.time}`);
+            return dateB.getTime() - dateA.getTime();
+          }).map((order: any) => {
+            const isActive = order.status !== 'Delivered';
             return (
               <div 
                 key={order.orderId} 
@@ -142,19 +146,29 @@ export default function History() {
                     <span>{order.address ? `Delivered to ${order.address}` : "Delivered to registered location"}</span>
                   </div>
                   
-                  <button
-                    onClick={() => {
-                      setActiveOrderId(order.orderId);
-                      navigate(`/order-status?order_id=${order.orderId}`);
-                    }}
-                    className={`flex items-center gap-1 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm
-                      ${isActive 
-                        ? 'bg-[#5C1324] text-white hover:bg-[#4A0F1D] hover:shadow' 
-                        : 'bg-white border border-panelBorder text-[#5C1324] hover:bg-gray-50 hover:border-coral'}`}
-                  >
-                    {isActive ? 'Track Live Map' : 'View Order Details'}
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {!isActive && (
+                      <button
+                        onClick={() => navigate(`/order-details/${order.orderId}`)}
+                        className="flex items-center gap-1 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm bg-white border border-panelBorder text-[#5C1324] hover:bg-gray-50 hover:border-coral"
+                      >
+                        View Order Details
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
+                    {isActive && (
+                      <button
+                        onClick={() => {
+                          setActiveOrderId(order.orderId);
+                          navigate(`/order-details/${order.orderId}`);
+                        }}
+                        className="flex items-center gap-1 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm bg-[#5C1324] text-white hover:bg-[#4A0F1D] hover:shadow"
+                      >
+                        Track Live Map
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
 import { TrendingUp, Cpu, Zap, Package, Map } from 'lucide-react';
-import OrderStatus from '../routes/customer/OrderStatus';
+import LiveMapTracker from './orders/LiveMapTracker';
 
 const salesData = [
   { time: '09:00', sales: 1200 },
@@ -236,8 +236,13 @@ export const AdminDashboard: React.FC = () => {
         </div>
         
         {/* Render the full-fledged Swiggy Map Tracking Component */}
-        <div className="w-full">
-          <OrderStatus />
+        <div className="w-full h-[400px]">
+          <LiveMapTracker 
+             phase="delivering" 
+             storeLocation={{ lat: 22.5015, lng: 88.3616 }} 
+             homeLocation={{ lat: 22.4981, lng: 88.3653 }} 
+             partnerInfo={{ name: "Admin View" }} 
+          />
         </div>
       </div>
 

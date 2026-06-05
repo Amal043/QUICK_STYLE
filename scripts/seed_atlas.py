@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 # Load env variables from backend/.env
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://admin:quick_style_secret@mongodb:27017/quick_style_db?authSource=admin")
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://admin:quick_style_secret@localhost:27017/quick_style_db?authSource=admin")
 DB_NAME = "quick_style_db"
 
 # ── Stores (Kolkata) ────────────────────────────────────────────────────────
@@ -29,6 +29,9 @@ store_a_id = ObjectId()
 store_b_id = ObjectId()
 store_c_id = ObjectId()
 store_d_id = ObjectId()
+store_e_id = ObjectId()
+store_f_id = ObjectId()
+store_g_id = ObjectId()
 
 STORES = [
     {
@@ -101,6 +104,60 @@ STORES = [
         "total_orders": 410,
         "active": True,
         "operating_hours": {"open": "08:00", "close": "21:00"},
+        "created_at": datetime.now(timezone.utc),
+    },
+    {
+        "_id": store_e_id,
+        "name": "Boutique E — Dumdum Airport Hub",
+        "owner_id": "owner_005",
+        "phone": "+919876543214",
+        "email": "boutiqueE@quickstyle.io",
+        "address": "Dumdum Cantonment",
+        "area": "Dumdum",
+        "city": "Kolkata",
+        "pincode": "700028",
+        "location": {"type": "Point", "coordinates": [88.4350, 22.6450]},
+        "categories": ["Streetwear", "Accessories"],
+        "rating": 4.5,
+        "total_orders": 120,
+        "active": True,
+        "operating_hours": {"open": "09:00", "close": "21:00"},
+        "created_at": datetime.now(timezone.utc),
+    },
+    {
+        "_id": store_f_id,
+        "name": "Boutique F — Gariahat Fashion",
+        "owner_id": "owner_006",
+        "phone": "+919876543215",
+        "email": "boutiqueF@quickstyle.io",
+        "address": "Gariahat Market",
+        "area": "Gariahat",
+        "city": "Kolkata",
+        "pincode": "700019",
+        "location": {"type": "Point", "coordinates": [88.3686, 22.5165]},
+        "categories": ["Runway", "Atelier"],
+        "rating": 4.8,
+        "total_orders": 230,
+        "active": True,
+        "operating_hours": {"open": "10:00", "close": "22:00"},
+        "created_at": datetime.now(timezone.utc),
+    },
+    {
+        "_id": store_g_id,
+        "name": "Boutique G — Hatibagan Trends",
+        "owner_id": "owner_007",
+        "phone": "+919876543216",
+        "email": "boutiqueG@quickstyle.io",
+        "address": "Hatibagan",
+        "area": "Shyambazar",
+        "city": "Kolkata",
+        "pincode": "700004",
+        "location": {"type": "Point", "coordinates": [88.3650, 22.5950]},
+        "categories": ["Activewear", "Formals"],
+        "rating": 4.4,
+        "total_orders": 85,
+        "active": True,
+        "operating_hours": {"open": "10:30", "close": "21:30"},
         "created_at": datetime.now(timezone.utc),
     },
 ]
@@ -597,9 +654,9 @@ PRODUCTS = [
                 "has_360": False
             }
         }],
-        "store_id": str(store_a_id),
-        "store_name": "Boutique A — South City Luxe",
-        "store_location": {"type": "Point", "coordinates": [88.3616, 22.5015]},
+        "store_id": str(store_e_id),
+        "store_name": "Boutique E — Dumdum Airport Hub",
+        "store_location": {"type": "Point", "coordinates": [88.4350, 22.6450]},
         "stock": {"S": 1, "M": 2, "L": 1, "XL": 0},
         "embedding": [],
         "rating": {"average": 4.9, "count": 67},
@@ -664,9 +721,9 @@ PRODUCTS = [
                 "has_360": True
             }
         }],
-        "store_id": str(store_c_id),
-        "store_name": "Boutique C — Salt Lake Knits",
-        "store_location": {"type": "Point", "coordinates": [88.4231, 22.5804]},
+        "store_id": str(store_f_id),
+        "store_name": "Boutique F — Gariahat Fashion",
+        "store_location": {"type": "Point", "coordinates": [88.3686, 22.5165]},
         "stock": {"S": 5, "M": 8, "L": 4, "XL": 1},
         "embedding": [],
         "rating": {"average": 4.0, "count": 3000},
@@ -698,9 +755,9 @@ PRODUCTS = [
                 "has_360": True
             }
         }],
-        "store_id": str(store_d_id),
-        "store_name": "Boutique D — New Town Active",
-        "store_location": {"type": "Point", "coordinates": [88.4633, 22.5726]},
+        "store_id": str(store_g_id),
+        "store_name": "Boutique G — Hatibagan Trends",
+        "store_location": {"type": "Point", "coordinates": [88.3650, 22.5950]},
         "stock": {"M": 20, "L": 15, "XL": 10},
         "embedding": [],
         "rating": {"average": 4.3, "count": 450},
@@ -786,10 +843,10 @@ DELIVERY_PARTNERS = [
 ]
 
 async def seed():
-    print("🌱 Connecting to MongoDB Atlas...")
+    print("Connecting to MongoDB Atlas...")
     client = AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=10000)
     await client.admin.command("ping")
-    print("✅ Connected!")
+    print("Connected!")
 
     db = client[DB_NAME]
 
@@ -797,14 +854,14 @@ async def seed():
     await db.stores.drop()
     await db.stores.create_index([("location", "2dsphere")])
     result = await db.stores.insert_many(STORES)
-    print(f"✅ Seeded {len(result.inserted_ids)} stores")
+    print(f"Seeded {len(result.inserted_ids)} stores")
 
     # ── Products ──────────────────────────────────
     await db.products.drop()
     await db.products.create_index([("store_location", "2dsphere")])
     await db.products.create_index([("name", "text"), ("description", "text"), ("tags", "text")])
     result = await db.products.insert_many(PRODUCTS)
-    print(f"✅ Seeded {len(result.inserted_ids)} products")
+    print(f"Seeded {len(result.inserted_ids)} products")
 
     # ── Demo User ─────────────────────────────────
     await db.users.drop()
@@ -815,17 +872,17 @@ async def seed():
         DEMO_USER,
         upsert=True
     )
-    print("✅ Admin user seeded (admin@quickstyle.io / admin1234)")
+    print("Seeded Demo Admin User (admin@quickstyle.io / admin1234)")
 
     # ── Delivery Partners ─────────────────────────────────
     await db.delivery_partners.drop()
     await db.delivery_partners.create_index([("current_location", "2dsphere")])
     result = await db.delivery_partners.insert_many(DELIVERY_PARTNERS)
-    print(f"✅ Seeded {len(result.inserted_ids)} delivery partners")
+    print(f"Seeded {len(result.inserted_ids)} delivery partners")
 
     client.close()
-    print("\n🎉 Atlas seed complete! Collections: stores, products, users, delivery_partners")
-    print(f"📊 View at: https://cloud.mongodb.com → Cluster0 → quick_style_db")
+    print("Database seeding completed successfully! Collections: stores, products, users, delivery_partners")
+    print("View at: https://cloud.mongodb.com → Cluster0 → quick_style_db")
 
 
 if __name__ == "__main__":

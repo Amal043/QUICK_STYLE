@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { User, MapPin, Plus, Trash2, Edit2, ChevronRight, Loader2, Key } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, MapPin, Plus, Trash2, Edit2, ChevronRight, Loader2, Key, LogOut } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
 export default function Account() {
-  const { adminMode, userProfile, setUserProfile } = useStore();
-  const [activeTab, setActiveTab] = useState<'profile' | 'addresses'>('profile');
+  const navigate = useNavigate();
+  const { adminMode, userProfile, setUserProfile, setUserCoords, setIsLoggedIn, setAdminMode } = useStore();
+  const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'admin_panel'>('profile');
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({ name: '', email: '', phone: '' });
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -25,6 +27,8 @@ export default function Account() {
           city: a.city,
           pincode: a.pincode,
           state: a.state || '',
+          lat: a.lat || 0,
+          lng: a.lng || 0,
           isDefault: a.isDefault !== undefined ? a.isDefault : a.is_default
         })));
       }
@@ -46,6 +50,8 @@ export default function Account() {
               city: a.city,
               pincode: a.pincode,
               state: a.state || '',
+              lat: a.lat || 0,
+              lng: a.lng || 0,
               isDefault: a.is_default
             })));
           }
@@ -60,11 +66,80 @@ export default function Account() {
   }, [adminMode, userProfile]);
 
   const [showAddAddress, setShowAddAddress] = useState(false);
-  const [newAddress, setNewAddress] = useState({ label: '', street: '', area: '', city: 'Kolkata', pincode: '', state: 'West Bengal' });
+  const [newAddress, setNewAddress] = useState({ label: '', street: '', area: '', city: '', pincode: '', state: '', lat: 0, lng: 0 });
+  const [fetchingLoc, setFetchingLoc] = useState(false);
+  const [addingLoc, setAddingLoc] = useState(false);
+  const [hasManualEdits, setHasManualEdits] = useState(false);
 
-  const handleAddAddress = (e: React.FormEvent) => {
+  const handleLiveLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    setFetchingLoc(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        let area = '';
+        let city = '';
+        let state = '';
+        let pincode = '';
+        
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+          const data = await res.json();
+          if (data && data.address) {
+            pincode = data.address.postcode || '';
+            city = data.address.city || data.address.town || data.address.village || '';
+            state = data.address.state || '';
+            area = data.address.suburb || data.address.neighbourhood || data.address.residential || '';
+          }
+        } catch (err) {
+          console.error("Reverse Geocoding failed", err);
+        }
+
+        setNewAddress(prev => ({ 
+          ...prev, 
+          lat: latitude, 
+          lng: longitude,
+          area: area || prev.area,
+          city: city || prev.city,
+          state: state || prev.state,
+          pincode: pincode || prev.pincode
+        }));
+        setHasManualEdits(false);
+        setFetchingLoc(false);
+      },
+      (error) => {
+        alert("Unable to retrieve your location: " + error.message);
+        setFetchingLoc(false);
+      }
+    );
+  };
+
+  const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    const updatedAddresses = [...addresses, { ...newAddress, id: Date.now(), isDefault: addresses.length === 0 }];
+    setAddingLoc(true);
+    
+    let finalLat = newAddress.lat;
+    let finalLng = newAddress.lng;
+
+    // If live location wasn't fetched OR user made manual edits to location fields, use forward geocoding
+    if (!finalLat || !finalLng || hasManualEdits) {
+       const addressString = `${newAddress.street}, ${newAddress.area}, ${newAddress.city}, ${newAddress.state} ${newAddress.pincode}`;
+       try {
+         const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressString)}&format=json&limit=1`);
+         const data = await res.json();
+         if (data && data.length > 0) {
+           finalLat = parseFloat(data[0].lat);
+           finalLng = parseFloat(data[0].lon);
+         }
+       } catch (err) {
+         console.error("Geocoding failed", err);
+       }
+    }
+
+    const updatedAddresses = [...addresses, { ...newAddress, lat: finalLat, lng: finalLng, id: Date.now(), isDefault: addresses.length === 0 }];
     setAddresses(updatedAddresses);
     
     // Save back to the store
@@ -78,18 +153,28 @@ export default function Account() {
           city: a.city,
           pincode: a.pincode,
           state: a.state,
+          lat: a.lat,
+          lng: a.lng,
           is_default: a.isDefault
         }))
       });
     }
     
     setShowAddAddress(false);
-    setNewAddress({ label: '', street: '', area: '', city: 'Kolkata', pincode: '', state: 'West Bengal' });
+    setAddingLoc(false);
+    setHasManualEdits(false);
+    setNewAddress({ label: '', street: '', area: '', city: '', pincode: '', state: '', lat: 0, lng: 0 });
   };
 
   const setAsDefault = (id: number) => {
     const updated = addresses.map(a => ({ ...a, isDefault: a.id === id }));
     setAddresses(updated);
+    
+    const active = updated.find(a => a.isDefault);
+    if (active && active.lat && active.lng) {
+      setUserCoords({ lat: active.lat, lng: active.lng });
+    }
+
     if (userProfile) {
       setUserProfile({
         ...userProfile,
@@ -100,6 +185,8 @@ export default function Account() {
           city: a.city,
           pincode: a.pincode,
           state: a.state,
+          lat: a.lat,
+          lng: a.lng,
           is_default: a.isDefault
         }))
       });
@@ -119,6 +206,8 @@ export default function Account() {
           city: a.city,
           pincode: a.pincode,
           state: a.state,
+          lat: a.lat,
+          lng: a.lng,
           is_default: a.isDefault
         }))
       });
@@ -142,7 +231,7 @@ export default function Account() {
             <User className="w-10 h-10" />
           </div>
           <span className="font-label-caps text-[#C5A880] text-[9px] tracking-[0.2em] uppercase">MEMBER PROFILE</span>
-          <h2 className="font-display-md text-gray-950 text-xl font-bold mt-1.5">{profile.name}</h2>
+          <h2 className="font-display-md text-gray-950 text-xl font-bold mt-1.5 break-all">{profile.name}</h2>
           <p className="font-body-base text-xs text-gray-500 mt-1">{profile.email}</p>
         </div>
 
@@ -174,7 +263,38 @@ export default function Account() {
             </div>
             <ChevronRight className="w-4 h-4 opacity-50" />
           </button>
+          
+          {adminMode && (
+            <button 
+              onClick={() => setActiveTab('admin_panel')}
+              className={`w-full flex items-center justify-between p-4 rounded-xl transition-all duration-300 border
+                ${activeTab === 'admin_panel' 
+                  ? 'bg-[#5C1324] border-[#5C1324] text-white shadow-md shadow-[#5C1324]/10' 
+                  : 'bg-white border-panelBorder text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <div className="flex items-center gap-3">
+                <Edit2 className="w-4.5 h-4.5" /> 
+                <span className="font-bold text-sm">Admin Panel</span>
+              </div>
+              <ChevronRight className="w-4 h-4 opacity-50" />
+            </button>
+          )}
         </nav>
+        
+        <div className="mt-8 pt-6 border-t border-panelBorder">
+          <button 
+            onClick={() => {
+              setIsLoggedIn(false);
+              setAdminMode(false);
+              setUserProfile(null);
+              navigate('/login');
+            }}
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-xl text-red-600 font-bold hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
+          >
+            <LogOut className="w-4.5 h-4.5" /> 
+            <span>Sign Out</span>
+          </button>
+        </div>
       </div>
 
       {/* Right Column: Content Card */}
@@ -328,29 +448,33 @@ export default function Account() {
                       </div>
                       <div className="col-span-2">
                         <label className="font-label-caps text-[8px] text-gray-400 tracking-wider block mb-1">STREET ADDRESS</label>
-                        <input required placeholder="Flat, Building, Road name" value={newAddress.street} onChange={e => setNewAddress({...newAddress, street: e.target.value})} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
+                        <input required placeholder="Flat, Building, Road name" value={newAddress.street} onChange={e => { setNewAddress({...newAddress, street: e.target.value}); setHasManualEdits(true); }} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
                       </div>
                       <div>
                         <label className="font-label-caps text-[8px] text-gray-400 tracking-wider block mb-1">AREA / LOCALITY</label>
-                        <input required placeholder="Sector, Area, Ward" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value})} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
+                        <input required placeholder="Sector, Area, Ward" value={newAddress.area} onChange={e => { setNewAddress({...newAddress, area: e.target.value}); setHasManualEdits(true); }} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
                       </div>
                       <div>
                         <label className="font-label-caps text-[8px] text-gray-400 tracking-wider block mb-1">PINCODE</label>
-                        <input required placeholder="6-digit ZIP" value={newAddress.pincode} onChange={e => setNewAddress({...newAddress, pincode: e.target.value})} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
+                        <input required placeholder="6-digit ZIP" value={newAddress.pincode} onChange={e => { setNewAddress({...newAddress, pincode: e.target.value}); setHasManualEdits(true); }} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
                       </div>
                       <div>
                         <label className="font-label-caps text-[8px] text-gray-400 tracking-wider block mb-1">CITY</label>
-                        <input required placeholder="City name" value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
+                        <input required placeholder="City name" value={newAddress.city} onChange={e => { setNewAddress({...newAddress, city: e.target.value}); setHasManualEdits(true); }} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
                       </div>
                       <div>
                         <label className="font-label-caps text-[8px] text-gray-400 tracking-wider block mb-1">STATE</label>
-                        <input required placeholder="State name" value={newAddress.state} onChange={e => setNewAddress({...newAddress, state: e.target.value})} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
+                        <input required placeholder="State name" value={newAddress.state} onChange={e => { setNewAddress({...newAddress, state: e.target.value}); setHasManualEdits(true); }} className="w-full bg-[#FAF8F5] border border-panelBorder rounded-xl p-3 text-sm text-gray-900 focus:outline-none focus:border-coral" />
                       </div>
                     </div>
                     
                     <div className="flex gap-3 pt-6 border-t border-panelBorder/35 mt-6">
-                      <button type="submit" className="flex-1 bg-[#5C1324] hover:bg-[#4A0F1D] text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#5C1324]/10 transition-colors">
-                        Save Address
+                      <button type="button" onClick={handleLiveLocation} disabled={fetchingLoc} className="flex-1 bg-coral hover:bg-coral-dark text-white py-3 rounded-xl font-bold text-[11px] shadow-lg transition-colors flex items-center justify-center gap-1">
+                        {fetchingLoc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5" />} 
+                        {fetchingLoc ? 'Fetching...' : 'Live Location'}
+                      </button>
+                      <button type="submit" disabled={addingLoc} className="flex-1 bg-[#5C1324] hover:bg-[#4A0F1D] text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#5C1324]/10 transition-colors flex items-center justify-center">
+                        {addingLoc ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Address'}
                       </button>
                       <button type="button" onClick={() => setShowAddAddress(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold text-sm transition-colors">
                         Cancel
@@ -360,6 +484,35 @@ export default function Account() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Admin Panel Tab Content */}
+        {activeTab === 'admin_panel' && (
+          <div className="space-y-8 animate-fade-in flex-1">
+            <div className="border-b border-panelBorder/50 pb-6">
+              <span className="font-label-caps text-[#C5A880] text-[10px] tracking-[0.25em] uppercase">SYSTEM ADMINISTRATION</span>
+              <h3 className="font-display-md text-2xl font-bold text-gray-950 mt-1">Admin Dashboard</h3>
+              <p className="font-body-base text-sm text-gray-500 mt-1">Manage boutique inventory and access AI registry tools.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <div className="border border-panelBorder rounded-2xl p-6 bg-[#FAF8F5]/30 hover:border-[#5C1324]/50 transition-colors cursor-pointer group" onClick={() => window.location.href = '/admin/add-product'}>
+                  <div className="w-12 h-12 bg-[#5C1324]/10 text-[#5C1324] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                     <Plus className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold text-gray-900 text-lg mb-1">Add New Product</h4>
+                  <p className="text-sm text-gray-500">Register new inventory manually or use the AI Assistant for auto-generation.</p>
+               </div>
+               
+               <div className="border border-panelBorder rounded-2xl p-6 bg-[#FAF8F5]/30 hover:border-[#5C1324]/50 transition-colors cursor-pointer group" onClick={() => window.location.href = '/admin/logs'}>
+                  <div className="w-12 h-12 bg-[#C5A880]/10 text-[#C5A880] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                     <Edit2 className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold text-gray-900 text-lg mb-1">Analytics & Logs</h4>
+                  <p className="text-sm text-gray-500">View real-time sales metrics and system logs.</p>
+               </div>
+            </div>
           </div>
         )}
 

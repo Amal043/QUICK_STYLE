@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { CartItem, Product, Size } from '../types';
 
 interface AppState {
@@ -45,25 +46,27 @@ interface AppState {
   addOrderToHistory: (order: any) => void;
 }
 
-export const useStore = create<AppState>((set) => ({
-  cart: [],
-  selectedSizes: {},
-  currentLocation: 'Select Location',
-  activeCategory: 'All',
-  sizingProduct: null,
-  cartOpen: false,
-  fulfillmentOpen: false,
-  originHub: 'Boutique A Hub',
-  couponApplied: false,
-  couponDiscount: 0,
-  voiceSearching: false,
-  adminMode: false,
-  isLoggedIn: false,
-  wishlist: [],
-  userProfile: null,
-  activeOrderId: null,
-  userCoords: null,
-  orderHistory: JSON.parse(localStorage.getItem('orderHistory') || '[]'),
+export const useStore = create<AppState>()(
+  persist(
+    (set) => ({
+      cart: [],
+      selectedSizes: {},
+      currentLocation: 'Select Location',
+      activeCategory: 'All',
+      sizingProduct: null,
+      cartOpen: false,
+      fulfillmentOpen: false,
+      originHub: 'Boutique A Hub',
+      couponApplied: false,
+      couponDiscount: 0,
+      voiceSearching: false,
+      adminMode: false,
+      isLoggedIn: false,
+      wishlist: [],
+      userProfile: null,
+      activeOrderId: null,
+      userCoords: null,
+      orderHistory: [],
 
   addToCart: (product, size) => set((state) => {
     const existingIndex = state.cart.findIndex(
@@ -143,7 +146,11 @@ export const useStore = create<AppState>((set) => ({
 
   addOrderToHistory: (order) => set((state) => {
     const updatedHistory = [order, ...state.orderHistory];
-    localStorage.setItem('orderHistory', JSON.stringify(updatedHistory));
     return { orderHistory: updatedHistory };
   }),
-}));
+    }),
+    {
+      name: 'quickstyle-store',
+    }
+  )
+);

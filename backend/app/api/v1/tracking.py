@@ -6,12 +6,14 @@ and streams simulated live position over websocket.
 
 import asyncio
 import json
-import random
+import time
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.db.connection import get_db
-from app.services.tracking_service import get_directions
 
 router = APIRouter()
+
+# In-memory store to preserve simulated tracking states across reconnects
+TRACKING_STATE = {}
 
 
 
@@ -30,89 +32,114 @@ async def tracking_websocket(websocket: WebSocket, order_id: str):
     store_coords = [88.3616, 22.5015]
     
     try:
-        # Find Nearest Delivery Partner to Store
-        nearest_partner = await db.delivery_partners.find_one({
-            "current_location": {
-                "$near": {
-                    "$geometry": {
-                        "type": "Point",
-                        "coordinates": store_coords
+        if order_id not in TRACKING_STATE:
+            # Find Nearest Delivery Partner to Store (First Time Only)
+            nearest_partner = await db.delivery_partners.find_one({
+                "current_location": {
+                    "$near": {
+                        "$geometry": {
+                            "type": "Point",
+                            "coordinates": store_coords
+                        }
                     }
-                }
-            },
-            "status": "vacant"
-        })
-        
-        if nearest_partner:
-            # Mark partner as busy
-            await db.delivery_partners.update_one(
-                {"_id": nearest_partner["_id"]},
-                {"$set": {"status": "busy"}}
-            )
+                },
+                "status": "vacant"
+            })
             
-        partner_info = {
-            "name": nearest_partner["name"] if nearest_partner else "Sukanta Das",
-            "phone": nearest_partner["phone"] if nearest_partner else "+919876543000",
-            "vehicle": nearest_partner["vehicle"] if nearest_partner else "scooter",
-        }
+            if nearest_partner:
+                await db.delivery_partners.update_one(
+                    {"_id": nearest_partner["_id"]},
+                    {"$set": {"status": "busy"}}
+                )
+                
+            partner_info = {
+                "name": nearest_partner["name"] if nearest_partner else "Sukanta Das",
+                "phone": nearest_partner["phone"] if nearest_partner else "+919876543000",
+                "vehicle": nearest_partner["vehicle"] if nearest_partner else "scooter",
+                "id": nearest_partner["_id"] if nearest_partner else None
+            }
+            TRACKING_STATE[order_id] = {
+                "start_time": time.time(),
+                "partner": partner_info
+            }
         
-        # State 0: Assigning Partner (0 - 1.5s)
-        await websocket.send_text(json.dumps({
-            "order_id": order_id, 
-            "status": "Order confirmed! Assigning nearest partner...", 
-            "progress": 5,
-            "phase": "assigning",
-            "partner": partner_info
-        }))
-        await asyncio.sleep(1.5)
+        state = TRACKING_STATE[order_id]
+        partner_info = state["partner"]
         
-        # State 1: Heading to Store (1.5s - 4.5s) -> 3 seconds duration
-        await websocket.send_text(json.dumps({
-            "order_id": order_id, 
-            "status": "Partner heading to store", 
-            "progress": 15,
-            "phase": "heading_to_store",
-            "duration": 3000,
-            "partner": partner_info
-        }))
-        await asyncio.sleep(3.0)
-        
-        # State 2: At Store Packing (4.5s - 6.0s) -> 1.5 seconds duration
-        await websocket.send_text(json.dumps({
-            "order_id": order_id, 
-            "status": "Order Picked Up! Packing complete.", 
-            "progress": 45,
-            "phase": "packing",
-            "partner": partner_info
-        }))
-        await asyncio.sleep(1.5)
-        
-        # State 3: Out for Delivery (6.0s - 10.0s) -> 4 seconds duration
-        await websocket.send_text(json.dumps({
-            "order_id": order_id, 
-            "status": "Out for Delivery", 
-            "progress": 55,
-            "phase": "delivering",
-            "duration": 4000,
-            "partner": partner_info
-        }))
-        await asyncio.sleep(4.0)
-        
-        # State 4: Delivered
-        await websocket.send_text(json.dumps({
-            "order_id": order_id,
-            "status": "Delivered!",
-            "progress": 100,
-            "phase": "delivered",
-            "partner": partner_info
-        }))
-        
-        # Free up partner
-        if nearest_partner:
-            await db.delivery_partners.update_one(
-                {"_id": nearest_partner["_id"]},
-                {"$set": {"status": "vacant"}}
-            )
+        while True:
+            elapsed = time.time() - state["start_time"]
+            
+            # State 0: Assigning Partner (0 - 6.0s)
+            if elapsed < 6.0:
+                await websocket.send_text(json.dumps({
+                    "order_id": order_id, 
+                    "status": "Order confirmed! Assigning nearest partner...", 
+                    "progress": 5,
+                    "phase": "assigning",
+                    "partner": partner_info
+                }))
+                await asyncio.sleep(6.0 - elapsed)
+                continue
+                
+            # State 1: Heading to Store (6.0s - 18.0s)
+            elif elapsed < 18.0:
+                await websocket.send_text(json.dumps({
+                    "order_id": order_id, 
+                    "status": "Partner heading to store", 
+                    "progress": 15,
+                    "phase": "heading_to_store",
+                    "duration": 12000,
+                    "partner": partner_info
+                }))
+                await asyncio.sleep(18.0 - elapsed)
+                continue
+                
+            # State 2: At Store Packing (18.0s - 24.0s)
+            elif elapsed < 24.0:
+                await websocket.send_text(json.dumps({
+                    "order_id": order_id, 
+                    "status": "Order Picked Up! Packing complete.", 
+                    "progress": 45,
+                    "phase": "packing",
+                    "partner": partner_info
+                }))
+                await asyncio.sleep(24.0 - elapsed)
+                continue
+                
+            # State 3: Out for Delivery (24.0s - 40.0s)
+            elif elapsed < 40.0:
+                await websocket.send_text(json.dumps({
+                    "order_id": order_id, 
+                    "status": "Out for Delivery", 
+                    "progress": 55,
+                    "phase": "delivering",
+                    "duration": 16000,
+                    "partner": partner_info
+                }))
+                await asyncio.sleep(40.0 - elapsed)
+                continue
+                
+            # State 4: Delivered
+            else:
+                await websocket.send_text(json.dumps({
+                    "order_id": order_id,
+                    "status": "Delivered!",
+                    "progress": 100,
+                    "phase": "delivered",
+                    "partner": partner_info
+                }))
+                
+                # Free up partner if they haven't been freed yet
+                if not state.get("partner_freed") and partner_info.get("id"):
+                    await db.delivery_partners.update_one(
+                        {"_id": partner_info["id"]},
+                        {"$set": {"status": "vacant"}}
+                    )
+                    state["partner_freed"] = True
+                
+                # Stay open but stop loop, or break
+                # We can just break and let the client know it's delivered
+                break
 
     except WebSocketDisconnect:
         print(f"[TRACKING] Tracking WS disconnected: {order_id}")

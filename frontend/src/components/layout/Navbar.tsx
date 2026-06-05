@@ -263,7 +263,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Wishlist Icon */}
           {isLoggedIn && (
             <Link
-              to="/account"
+              to="/wishlist"
               className="relative bg-white hover:bg-lavender-deep border border-panelBorder p-3 rounded-xl flex items-center justify-center transition-all duration-200 group text-[#C5A880] hover:text-[#5C1324]"
             >
               <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />

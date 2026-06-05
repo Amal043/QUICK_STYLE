@@ -12,13 +12,15 @@ import Home from './routes/customer/Home';
 import Collection from './routes/customer/Collection';
 import ProductDetailsPage from './routes/customer/ProductDetailsPage';
 import Chat from './routes/customer/Chat';
-import OrderStatus from './routes/customer/OrderStatus';
+import OrderDetails from './routes/customer/OrderDetails';
 import Account from './routes/customer/Account';
 import Signup from './routes/customer/Signup';
 import Login from './routes/customer/Login';
 import History from './routes/customer/History';
+import Wishlist from './routes/customer/Wishlist';
 import AdminDashboard from './routes/admin/Dashboard';
 import AgentBrain from './routes/admin/AgentBrain';
+import AdminAddProduct from './routes/admin/AdminAddProduct';
 
 
 const queryClient = new QueryClient();
@@ -54,38 +56,55 @@ function AppShell() {
 
   const handlePlaceOrder = (couponApplied: boolean, couponDiscount: number) => {
     if (cart.length === 0) return;
-    const primaryItem = cart[0].product;
-    setOriginHub(`${primaryItem.store_name || primaryItem.boutique}`);
+    
     setCouponApplied(couponApplied);
     setCouponDiscount(couponDiscount);
     setCartOpen(false);
     
-    // Generate Order ID
-    const orderId = `FW-${Math.floor(100000 + Math.random() * 900000)}`;
-    const totalAmount = cart.reduce((sum, item) => sum + item.product.price.selling_price * item.quantity, 0);
-    const finalAmount = couponApplied ? totalAmount - couponDiscount : totalAmount;
+    // Split into multiple orders (one per cart item) because items come from different boutiques
+    const newOrderIds: string[] = [];
+    
+    cart.forEach((item, index) => {
+      const orderId = `FW-${Math.floor(100000 + Math.random() * 900000)}`;
+      newOrderIds.push(orderId);
+      
+      const itemPrice = item.product.price.selling_price * item.quantity;
+      // If a coupon is applied, we can just distribute it or apply it to the first order. 
+      // For simplicity, applying proportionately or ignoring. Let's apply it just to the first item for now.
+      const discountToApply = (index === 0 && couponApplied) ? couponDiscount : 0;
+      const finalAmount = itemPrice - discountToApply;
 
-    // Save order in history
-    addOrderToHistory({
-      orderId,
-      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-      amount: Math.round(finalAmount),
-      address: useStore.getState().currentLocation !== 'Select Location' ? useStore.getState().currentLocation.replace('📍 ', '') : 'Registered Address',
-      items: cart.map(item => ({
-        id: item.product.id,
-        name: item.product.name,
-        image: item.product.image,
-        price: item.product.price.selling_price,
-        size: item.size,
-        quantity: item.quantity
-      })),
-      status: 'In Transit'
+      addOrderToHistory({
+        orderId,
+        date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        amount: Math.max(0, Math.round(finalAmount)),
+        address: useStore.getState().currentLocation !== 'Select Location' ? useStore.getState().currentLocation.replace('📍 ', '') : 'Registered Address',
+        items: [{
+          id: item.product.id,
+          name: item.product.name,
+          image: item.product.image,
+          price: item.product.price.selling_price,
+          size: item.size,
+          quantity: item.quantity,
+          store_name: item.product.store_name,
+          store_location: item.product.store_location
+        }],
+        status: 'In Transit'
+      });
     });
 
     clearCart();
-    setActiveOrderId(orderId);
-    navigate(`/order-status?order_id=${orderId}`);
+    
+    // If multiple items, navigate to history so user sees all of them tracking separately. 
+    // If single item, navigate directly to that order's details page.
+    if (newOrderIds.length === 1) {
+      setActiveOrderId(newOrderIds[0]);
+      navigate(`/order-details/${newOrderIds[0]}`);
+    } else {
+      setActiveOrderId(null);
+      navigate(`/history`);
+    }
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -114,13 +133,15 @@ function AppShell() {
           <Route path="/collection" element={<Collection />} />
           <Route path="/product/:id" element={<ProductDetailsPage />} />
           <Route path="/chat" element={<Chat />} />
-          <Route path="/order-status" element={<OrderStatus />} />
+          <Route path="/order-details/:orderId" element={<OrderDetails />} />
           <Route path="/account" element={<Account />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
           <Route path="/history" element={<History />} />
+          <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/admin/logs" element={<AdminDashboard />} />
           <Route path="/admin/brain" element={<AgentBrain />} />
+          <Route path="/admin/add-product" element={<AdminAddProduct />} />
 
         </Routes>
       </main>
