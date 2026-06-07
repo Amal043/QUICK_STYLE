@@ -9,7 +9,19 @@ from app.db.connection import get_db
 from app.agents.supervisor import negotiation_graph
 from app.agents.safety_agent import pre_retrieval_guardrail, post_retrieval_guardrail
 from app.websocket.connection_manager import manager
-from langchain_google_genai import ChatGoogleGenerativeAI
+import os
+import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
+
+if os.getenv("GOOGLE_API_KEY"):
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+safety_settings = {
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+}
 
 router = APIRouter()
 
@@ -313,7 +325,13 @@ async def send_message(body: ChatMessage, db=Depends(get_db)):
         mapped_recommendations.append(mapped)
         
     # Generate stylized conversational response using Gemini
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7)
+    generation_config = genai.types.GenerationConfig(
+        temperature=0.7,
+    )
+    model = genai.GenerativeModel(
+        model_name='gemini-2.5-flash',
+        safety_settings=safety_settings
+    )
     
     rec_details_list = []
     for r in mapped_recommendations:
@@ -349,8 +367,11 @@ async def send_message(body: ChatMessage, db=Depends(get_db)):
     """
     
     try:
-        response = await llm.ainvoke(prompt)
-        reply = response.content.strip()
+        response = await model.generate_content_async(
+            prompt,
+            generation_config=generation_config
+        )
+        reply = response.text.strip()
     except Exception as e:
         print(f"Error generating Gemini chat reply: {e}")
         # Simple fallback

@@ -1,4 +1,3 @@
-from langchain_google_vertexai import ChatVertexAI
 from app.websocket.agent_broadcaster import broadcast_agent_event
 import time, json
 import os
@@ -51,9 +50,24 @@ async def negotiation_mediator_node(state: dict) -> dict:
             "agent_log": [{"agent": "negotiation_mediator", "action": "conflict_round", "round": round_num}]
         }
 
-    # Using langchain-google-genai because GEMINI_API_KEY is provided
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
+    # Using native google-generativeai
+    import google.generativeai as genai
+    from google.generativeai.types import HarmCategory, HarmBlockThreshold
+    
+    if os.getenv("GOOGLE_API_KEY"):
+        genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+    safety_settings = {
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    }
+
+    model = genai.GenerativeModel(
+        model_name='gemini-2.5-flash',
+        safety_settings=safety_settings
+    )
     
     force_prompt = f"""You are the Supervisor Agent mediating a conflict.
 
@@ -73,11 +87,14 @@ B) Tell the user no suitable product was found and ask for different criteria
 Respond with JSON: {{"decision": "accept" or "reject", "user_message": "brief message to show user"}}"""
 
     try:
-        response = llm.invoke(force_prompt)
-        # Strip potential markdown block syntax
-        content = response.content.strip()
-        if content.startswith("```json"):
-            content = content[7:-3].strip()
+        response = model.generate_content(
+            force_prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0,
+                response_mime_type="application/json"
+            )
+        )
+        content = response.text.strip()
         decision_data = json.loads(content)
     except Exception as e:
         print(f"Error parsing Gemini response: {e}")

@@ -6,14 +6,26 @@ Ensures chat output doesn't leak system prompts.
 """
 import os
 import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from typing import Tuple
 
 # Configure in case not done elsewhere
 if os.getenv("GOOGLE_API_KEY"):
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-# Using gemini-2.5-flash
-safety_model = genai.GenerativeModel('gemini-2.5-flash')
+# Configure safety settings directly inside Gemini API initialization
+safety_settings = {
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+}
+
+# Using gemini-2.5-flash with safety settings configured directly
+safety_model = genai.GenerativeModel(
+    model_name='gemini-2.5-flash',
+    safety_settings=safety_settings
+)
 
 async def pre_retrieval_guardrail(query: str) -> Tuple[bool, str]:
     """
