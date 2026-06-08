@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, ShieldCheck, Truck, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, ShieldCheck, Truck, X, ChevronLeft, ChevronRight, Upload, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useQuery } from '@tanstack/react-query';
 import { ProductCard } from '../../components/product/ProductCard';
@@ -308,6 +308,332 @@ function Lightbox({ views, startIdx, onClose }: LightboxProps) {
   );
 }
 
+// ─── TryOnModal Component ───────────────────────────────────────────────────
+interface TryOnModalProps {
+  product: Product;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function TryOnModal({ product, isOpen, onClose }: TryOnModalProps) {
+  const [userFile, setUserFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [advice, setAdvice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loadingStep, setLoadingStep] = useState("");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  if (!isOpen) return null;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUserFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setResultUrl(null);
+      setAdvice(null);
+      setError(null);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setUserFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setResultUrl(null);
+      setAdvice(null);
+      setError(null);
+    }
+  };
+
+  const handleReset = () => {
+    setUserFile(null);
+    setPreviewUrl(null);
+    setResultUrl(null);
+    setAdvice(null);
+    setError(null);
+  };
+
+  const handleGenerate = async () => {
+    if (!userFile) return;
+    setIsGenerating(true);
+    setError(null);
+    setLoadingStep("Uploading image...");
+
+    const steps = [
+      "Uploading your photo...",
+      "AI is analyzing your pose and features...",
+      "Matching skin tones and lighting...",
+      "Calibrating garment sizing...",
+      "Simulating fabric textures...",
+      "Rendering your personalized Try-On preview...",
+    ];
+    let stepIdx = 0;
+    const interval = setInterval(() => {
+      if (stepIdx < steps.length - 1) {
+        stepIdx++;
+        setLoadingStep(steps[stepIdx]);
+      }
+    }, 2500);
+
+    try {
+      const formData = new FormData();
+      formData.append("user_image", userFile);
+      formData.append("garment_image_url", product.image);
+      formData.append("garment_name", product.name);
+      formData.append("category", product.category || "tops");
+
+      const res = await fetch("/api/v1/vto/try-on-upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      clearInterval(interval);
+
+      if (!res.ok) {
+        throw new Error(`Server returned error status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      setResultUrl(data.generated_image_url);
+      setAdvice(data.styling_advice);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to process the request. Please verify your connection.");
+    } finally {
+      clearInterval(interval);
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <style>{`
+        @keyframes scan {
+          0%, 100% { top: 0%; }
+          50% { top: 100%; }
+        }
+        .animate-scan-loop {
+          animation: scan 2.5s linear infinite;
+        }
+      `}</style>
+      <div 
+        className="relative bg-surface-container-lowest border border-outline-variant/30 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col md:flex-row min-h-[550px] max-h-[90vh]"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Left Side: Product Context & Info */}
+        <div className="md:w-80 bg-surface-container-low p-6 flex flex-col justify-between border-r border-outline-variant/20 shrink-0">
+          <div>
+            <div className="flex items-center gap-2 mb-6 text-purple-600 dark:text-purple-400">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+              <span className="text-xs font-bold uppercase tracking-widest">AI Virtual Dressing</span>
+            </div>
+            
+            <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-4 mb-6 shadow-sm">
+              <div className="aspect-[3/4] rounded-xl overflow-hidden bg-surface-container-low mb-3">
+                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+              </div>
+              <h3 className="font-semibold text-sm text-on-surface truncate">{product.name}</h3>
+              <p className="text-xs text-on-surface-variant mt-0.5">₹{product.price.selling_price}</p>
+            </div>
+
+            <div className="text-xs text-on-surface-variant space-y-2.5">
+              <p className="font-semibold text-on-surface">Tips for best results:</p>
+              <ul className="list-disc pl-4 space-y-1.5">
+                <li>Use a clear, front-facing, well-lit photo of yourself.</li>
+                <li>Avoid loose clothing or patterns in your photo.</li>
+                <li>Ensure the background is relatively clean/solid.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-outline-variant/10">
+            <p className="text-[10px] text-on-surface-variant leading-relaxed">
+              Powered by Gemini and Pollinations AI. Images are processed securely and not saved permanently.
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side: Workspace */}
+        <div className="flex-1 p-6 md:p-8 flex flex-col relative overflow-y-auto">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 w-9 h-9 bg-surface-container-high hover:bg-surface-container-highest rounded-full flex items-center justify-center text-on-surface transition-colors z-10"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <h2 className="font-display-md text-xl md:text-2xl text-on-surface mb-6 pr-8">
+            Virtual Try-On
+          </h2>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-bold">Generation Failed</p>
+                <p className="mt-0.5 opacity-90">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Workflow content */}
+          <div className="flex-1 flex flex-col justify-center">
+            
+            {/* Step 1: Upload state */}
+            {!previewUrl && !isGenerating && (
+              <div 
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={triggerFileInput}
+                className="border-2 border-dashed border-outline-variant/40 hover:border-purple-500/50 rounded-2xl p-8 text-center cursor-pointer transition-colors duration-300 bg-surface-container-low/30 hover:bg-surface-container-low/60 flex flex-col items-center justify-center min-h-[300px]"
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+                <div className="w-14 h-14 rounded-full bg-purple-500/10 flex items-center justify-center mb-4 text-purple-600 dark:text-purple-400">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <p className="font-semibold text-on-surface text-base">Drag and drop your photo here</p>
+                <p className="text-xs text-on-surface-variant mt-1.5">or click to browse from device</p>
+                <p className="text-[10px] text-on-surface-variant mt-6 uppercase tracking-wider">Supports JPEG, PNG up to 10MB</p>
+              </div>
+            )}
+
+            {/* Step 2: Uploaded, but not yet generated */}
+            {previewUrl && !resultUrl && !isGenerating && (
+              <div className="flex flex-col items-center gap-6 py-4">
+                <div className="relative w-full max-w-sm aspect-[3/4] bg-surface-container-low rounded-2xl overflow-hidden shadow-md">
+                  <img src={previewUrl} alt="Your photo" className="w-full h-full object-cover" />
+                  <button 
+                    onClick={handleReset}
+                    className="absolute top-3 right-3 bg-black/60 hover:bg-black text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors"
+                  >
+                    <RefreshCw className="w-3 h-3" /> Change
+                  </button>
+                </div>
+                
+                <button
+                  onClick={handleGenerate}
+                  className="w-full max-w-sm h-12 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Generate AI Try-On
+                </button>
+              </div>
+            )}
+
+            {/* Step 3: Loading / Generating state */}
+            {isGenerating && (
+              <div className="flex flex-col items-center justify-center py-8 text-center min-h-[300px]">
+                <div className="relative w-44 aspect-[3/4] bg-surface-container-low rounded-2xl overflow-hidden mb-6 shadow-lg border border-outline-variant/20">
+                  <img src={previewUrl!} alt="Uploading preview" className="w-full h-full object-cover opacity-60" />
+                  
+                  {/* Glowing vertical scanner animation line */}
+                  <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 shadow-[0_0_15px_#a855f7] animate-scan-loop z-10" />
+                </div>
+
+                <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold mb-2">
+                  <span className="material-symbols-outlined animate-spin text-xl">autorenew</span>
+                  <span>Generating Try-On...</span>
+                </div>
+                <p className="text-sm text-on-surface-variant font-medium max-w-xs transition-all duration-500">
+                  {loadingStep}
+                </p>
+              </div>
+            )}
+
+            {/* Step 4: Success state */}
+            {resultUrl && !isGenerating && (
+              <div className="flex flex-col gap-6">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Left: Original Photo */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Your Photo</span>
+                    <div className="aspect-[3/4] bg-surface-container-low rounded-2xl overflow-hidden shadow border border-outline-variant/10">
+                      <img src={previewUrl!} alt="Original upload" className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+
+                  {/* Right: AI Result */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-widest text-purple-600 dark:text-purple-400 font-bold flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> AI Simulation
+                      </span>
+                      <span className="text-[9px] uppercase tracking-widest bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold border border-emerald-200/20">Ready</span>
+                    </div>
+                    <div className="aspect-[3/4] bg-surface-container-low rounded-2xl overflow-hidden shadow-lg border border-purple-500/20 relative group">
+                      <img src={resultUrl} alt="Try on result" className="w-full h-full object-cover" />
+                      <a 
+                        href={resultUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-black/60 hover:bg-black flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Open full size image"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Styling Advice */}
+                {advice && (
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500/5 to-pink-500/5 border border-purple-500/10">
+                    <h4 className="font-semibold text-xs text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" /> AI Stylist Recommendation
+                    </h4>
+                    <p className="text-sm text-on-surface leading-relaxed font-normal">
+                      {advice}
+                    </p>
+                  </div>
+                )}
+
+                {/* Footer Controls */}
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={handleReset}
+                    className="flex-1 h-12 rounded-full border border-outline-variant text-on-surface font-semibold flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Try Another Photo
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="flex-1 h-12 rounded-full bg-on-surface text-background font-semibold flex items-center justify-center gap-2 hover:bg-surface-tint transition-colors"
+                  >
+                    Close & Decide
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ProductDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -315,6 +641,7 @@ export default function ProductDetailsPage() {
   const { wishlist, toggleWishlist, addToCart, setCartOpen } = useStore();
   const [selectedSize, setSelectedSize] = useState<Size | ''>('');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [isTryOnOpen, setIsTryOnOpen] = useState(false);
 
   // Scroll to top when product ID changes
   useEffect(() => {
@@ -373,6 +700,13 @@ export default function ProductDetailsPage() {
       {lightboxIdx !== null && (
         <Lightbox views={modelViews} startIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
       )}
+
+      {/* ── Virtual Try-On Modal ── */}
+      <TryOnModal
+        product={product}
+        isOpen={isTryOnOpen}
+        onClose={() => setIsTryOnOpen(false)}
+      />
 
       {/* ── Product Top Section ── */}
       <div className="max-w-7xl mx-auto px-4 md:px-margin-desktop py-8 md:py-16">
@@ -499,12 +833,21 @@ export default function ProductDetailsPage() {
       {/* ── AI MODEL SHOWCASE ──────────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 md:px-margin-desktop py-14 border-t border-outline-variant/20">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-            <span className="material-symbols-outlined text-white text-[14px]">smart_toy</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <span className="material-symbols-outlined text-white text-[14px]">smart_toy</span>
+            </div>
+            <h2 className="font-display-md text-2xl text-on-surface">See It On Models</h2>
+            <span className="text-[10px] uppercase tracking-widest bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold border border-purple-200">AI Generated</span>
           </div>
-          <h2 className="font-display-md text-2xl text-on-surface">See It On Models</h2>
-          <span className="text-[10px] uppercase tracking-widest bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold border border-purple-200">AI Generated</span>
+          <button
+            onClick={() => setIsTryOnOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
+          >
+            <span className="material-symbols-outlined text-[18px]">photo_camera</span>
+            Try It On Yourself
+          </button>
         </div>
         <p className="text-sm text-on-surface-variant mb-10 ml-9">AI-generated model previews showing how this garment looks from different angles</p>
 
