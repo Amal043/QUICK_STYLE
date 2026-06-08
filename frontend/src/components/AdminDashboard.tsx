@@ -239,6 +239,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="w-full h-[400px]">
           <LiveMapTracker 
              phase="delivering" 
+             mode="Delivery"
              storeLocation={{ lat: 22.5015, lng: 88.3616 }} 
              homeLocation={{ lat: 22.4981, lng: 88.3653 }} 
              partnerInfo={{ name: "Admin View" }} 

@@ -5,18 +5,24 @@ import { ProductCard } from '../../components/product/ProductCard';
 
 export default function Collection() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const productSectionRef = React.useRef<HTMLElement>(null);
   
   // Parse initial filters from URL
   const initialCategory = searchParams.get('category') || '';
   const initialSizes = searchParams.get('sizes') ? searchParams.get('sizes')!.split(',') : [];
   const initialColors = searchParams.get('colors') ? searchParams.get('colors')!.split(',') : [];
   const initialMinDiscount = searchParams.get('min_discount') ? parseInt(searchParams.get('min_discount')!) : 0;
+  const initialStore = searchParams.get('store') || '';
+  const initialSearch = searchParams.get('search') || '';
   const initialSortBy = searchParams.get('sort_by') || 'created_at';
 
   const [category, setCategory] = useState(initialCategory);
   const [sizes, setSizes] = useState<string[]>(initialSizes);
   const [colors, setColors] = useState<string[]>(initialColors);
   const [minDiscount, setMinDiscount] = useState<number>(initialMinDiscount);
+  const [store, setStore] = useState(initialStore);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [storeSearchQuery, setStoreSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState(initialSortBy);
 
   // Sync state back to URL
@@ -26,13 +32,21 @@ export default function Collection() {
     if (sizes.length > 0) params.set('sizes', sizes.join(','));
     if (colors.length > 0) params.set('colors', colors.join(','));
     if (minDiscount > 0) params.set('min_discount', minDiscount.toString());
+    if (store) params.set('store', store);
+    if (searchQuery) params.set('search', searchQuery);
     if (sortBy && sortBy !== 'created_at') params.set('sort_by', sortBy);
     
     setSearchParams(params, { replace: true });
-  }, [category, sizes, colors, minDiscount, sortBy, setSearchParams]);
+  }, [category, sizes, colors, minDiscount, store, searchQuery, sortBy, setSearchParams]);
 
   // Fetch products with the current filter state
   const { data: products = [], isLoading } = useProducts(searchParams.toString());
+
+  useEffect(() => {
+    if (searchQuery && products.length > 0 && productSectionRef.current) {
+      productSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [searchQuery, products]);
 
   const toggleSize = (size: string) => {
     setSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
@@ -57,6 +71,16 @@ export default function Collection() {
   ];
   const sizeOptions = ["XS", "S", "M", "L", "XL", "XXL"];
   const discountOptions = [10, 20, 30, 50];
+  const allStores = [
+    "Boutique A — South City Luxe",
+    "Boutique B — Park Street Trends",
+    "Boutique C — Salt Lake Knits",
+    "Boutique D — New Town Active",
+    "Boutique E — Dumdum Airport Hub",
+    "Boutique F — Gariahat Fashion",
+    "Boutique G — Hatibagan Trends"
+  ];
+  const filteredStores = allStores.filter(s => s.toLowerCase().includes(storeSearchQuery.toLowerCase()));
 
   return (
     <div className="min-h-screen flex flex-col font-body-base text-body-base bg-background text-on-surface animate-fade-in">
@@ -66,9 +90,9 @@ export default function Collection() {
         <aside className="hidden lg:block w-64 shrink-0 pr-8 border-r border-outline-variant/20 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar">
           <div className="flex items-center justify-between mb-8">
             <h3 className="font-display-md text-xl tracking-wider">FILTERS</h3>
-            {(category || sizes.length > 0 || colors.length > 0 || minDiscount > 0) && (
+            {(category || sizes.length > 0 || colors.length > 0 || minDiscount > 0 || store) && (
               <button 
-                onClick={() => { setCategory(''); setSizes([]); setColors([]); setMinDiscount(0); }}
+                onClick={() => { setCategory(''); setSizes([]); setColors([]); setMinDiscount(0); setStore(''); }}
                 className="text-xs font-label-caps-xs uppercase text-error hover:text-error/80"
               >
                 Clear All
@@ -116,6 +140,40 @@ export default function Collection() {
             </div>
           </div>
 
+          {/* Store Filter */}
+          <div className="mb-10 relative">
+            <h4 className="font-body-bold text-body-bold mb-4 uppercase tracking-widest text-on-surface-variant">Store</h4>
+            <div className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+              <input 
+                type="text"
+                placeholder="Search stores..."
+                value={storeSearchQuery}
+                onChange={(e) => setStoreSearchQuery(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-transparent border-b border-outline-variant focus:outline-none focus:border-primary transition-colors text-on-surface"
+              />
+              <ul className="max-h-40 overflow-y-auto no-scrollbar py-2 space-y-1">
+                <li 
+                  onClick={() => setStore('')}
+                  className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-surface-container transition-colors ${store === '' ? 'font-bold text-primary' : 'text-on-surface'}`}
+                >
+                  All Stores
+                </li>
+                {filteredStores.map(st => (
+                  <li 
+                    key={st}
+                    onClick={() => setStore(st)}
+                    className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-surface-container transition-colors ${store === st ? 'font-bold text-primary' : 'text-on-surface'}`}
+                  >
+                    {st}
+                  </li>
+                ))}
+                {filteredStores.length === 0 && (
+                  <li className="px-3 py-2 text-xs text-on-surface-variant">No stores found.</li>
+                )}
+              </ul>
+            </div>
+          </div>
+
           {/* Size */}
           <div className="mb-10">
             <h4 className="font-body-bold text-body-bold mb-4 uppercase tracking-widest text-on-surface-variant">Size</h4>
@@ -158,7 +216,7 @@ export default function Collection() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1">
+        <main className="flex-1" ref={productSectionRef}>
           {/* Header & Sort */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
             <div>

@@ -38,6 +38,8 @@ async def get_products(
     sizes: Optional[str] = Query(None, description="Comma-separated sizes"),
     colors: Optional[str] = Query(None, description="Comma-separated colors"),
     min_discount: Optional[int] = Query(None, description="Minimum discount percentage"),
+    store: Optional[str] = Query(None, description="Store name filter"),
+    search: Optional[str] = Query(None, description="Search query string"),
     sort_by: str = Query("created_at"),   # created_at | price | rating | fit_score
     limit: int = Query(20, le=100),
     skip: int = Query(0),
@@ -72,6 +74,16 @@ async def get_products(
             # Create regexes for case-insensitive exact matching
             regexes = [re.compile(f"^{re.escape(c)}$", re.IGNORECASE) for c in color_list]
             query["colors.name"] = {"$in": regexes}
+            
+    if store:
+        query["store_name"] = {"$regex": store, "$options": "i"}
+        
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}},
+            {"category": {"$regex": search, "$options": "i"}}
+        ]
             
     if min_discount is not None:
         query.setdefault("price.discount_percent", {})["$gte"] = min_discount

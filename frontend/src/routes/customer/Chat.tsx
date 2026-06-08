@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Sparkles, Send, User, Zap, Mic, MicOff } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Bot, Sparkles, Send, User, Zap, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import type { Message, Size } from '../../types';
 import { useAgentLog } from '../../hooks/useAgentLog';
@@ -9,6 +10,7 @@ import NegotiationCard from '../../components/chat/NegotiationCard';
 const botWelcome = "👋 Welcome to QUICK_STYLE Concierge. I am your personal AI stylist. Need a swift wardrobe change for an unexpected event, spilled coffee, or a night out? Describe your fit requirements below.";
 
 export default function Chat() {
+  const navigate = useNavigate();
   const {
     selectedSizes,
     setSize,
@@ -18,31 +20,79 @@ export default function Chat() {
     setVoiceSearching
   } = useStore();
 
+  const [sessionId] = useState(() => {
+    const savedSession = sessionStorage.getItem('quickstyle_chat_session');
+    if (savedSession) return savedSession;
+    const newSession = `sess-${Math.random().toString(36).substr(2, 9)}`;
+    sessionStorage.setItem('quickstyle_chat_session', newSession);
+    return newSession;
+  });
+
   const {
     activeAgent,
     statusText,
     isProcessing: agentProcessing,
     negotiations,
     clearLogs
-  } = useAgentLog('demo-session');
+  } = useAgentLog(sessionId);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = sessionStorage.getItem('quickstyle_chat_messages');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Do not render stored action nodes (JSX), just text.
+        return parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp), action: undefined }));
+      } catch (e) {}
+    }
+    return [{
       id: 'welcome',
       sender: 'bot',
       text: botWelcome,
       timestamp: new Date()
-    }
-  ]);
+    }];
+  });
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+  const speakText = useCallback((text: string) => {
+    if (!ttsEnabled || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    // Strip HTML tags for speech
+    const plain = text.replace(/<[^>]*>/g, '').replace(/\*/g, '').trim();
+    if (!plain) return;
+    const utter = new SpeechSynthesisUtterance(plain.slice(0, 400));
+    utter.rate = 0.95;
+    utter.pitch = 1.0;
+    utter.lang = 'en-US';
+    // Prefer a female voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('female'))
+      || voices.find(v => v.lang.startsWith('en'));
+    if (preferred) utter.voice = preferred;
+    utter.onstart = () => setIsSpeaking(true);
+    utter.onend = () => setIsSpeaking(false);
+    utter.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utter);
+  }, [ttsEnabled]);
+
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
+
   // Scroll to bottom whenever messages list grows
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    
+    // Save messages to session storage without the React elements (actions)
+    const messagesToSave = messages.map(({ action, ...m }: any) => m);
+    sessionStorage.setItem('quickstyle_chat_messages', JSON.stringify(messagesToSave));
   }, [messages, isTyping]);
 
   const mapImage = (name: string): string => {
@@ -141,7 +191,7 @@ export default function Chat() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          session_id: 'demo-session',
+          session_id: sessionId,
           message: text,
           location: currentLocation || 'NIT Jamshedpur Campus'
         })
@@ -153,6 +203,16 @@ export default function Chat() {
       
       const data = await response.json();
       setIsTyping(false);
+      
+      if (data.commands && data.commands.length > 0) {
+        data.commands.forEach((cmd: any) => {
+          if (cmd.type === 'navigate') {
+            navigate(cmd.path);
+          } else if (cmd.type === 'checkout') {
+            navigate('/cart');
+          }
+        });
+      }
 
       let actionNode: React.ReactNode = null;
       if (data.product_recommendations && data.product_recommendations.length > 0) {
@@ -219,12 +279,13 @@ export default function Chat() {
         text: data.reply.replace(/\n/g, '<br>'),
         timestamp: new Date()
       };
-      
+
       if (actionNode) {
         (botMsg as any).action = actionNode;
       }
 
       setMessages((prev) => [...prev, botMsg]);
+      speakText(data.reply);
     } catch (err) {
       console.error(err);
       setIsTyping(false);
@@ -249,9 +310,19 @@ export default function Chat() {
       }, 800);
     };
 
+    const handleStartVoice = () => {
+      if (!voiceSearching) {
+        handleLocalMic();
+      }
+    };
+
     window.addEventListener('voice-query', handleVoiceQuery);
-    return () => window.removeEventListener('voice-query', handleVoiceQuery);
-  }, []);
+    window.addEventListener('start-voice-recording', handleStartVoice);
+    return () => {
+      window.removeEventListener('voice-query', handleVoiceQuery);
+      window.removeEventListener('start-voice-recording', handleStartVoice);
+    };
+  }, [voiceSearching]);
 
   const handleChipClick = (prompt: string) => {
     appendUserMessage(prompt);
@@ -302,7 +373,7 @@ export default function Chat() {
           try {
             const formData = new FormData();
             formData.append('audio_file', audioBlob, 'audio.webm');
-            formData.append('session_id', 'demo-session');
+            formData.append('session_id', sessionId);
             formData.append('location', currentLocation || 'NIT Jamshedpur Campus');
 
             const response = await fetch('/api/v1/chat/message/audio', {
@@ -315,6 +386,16 @@ export default function Chat() {
             
             // Re-use logic to render AI response
             setIsTyping(false);
+            
+            if (data.commands && data.commands.length > 0) {
+              data.commands.forEach((cmd: any) => {
+                if (cmd.type === 'navigate') {
+                  navigate(cmd.path);
+                } else if (cmd.type === 'checkout') {
+                  navigate('/cart');
+                }
+              });
+            }
             
             let actionNode: React.ReactNode = null;
             if (data.product_recommendations && data.product_recommendations.length > 0) {
@@ -414,7 +495,26 @@ export default function Chat() {
             <p className="text-[9px] text-gray-500 font-semibold tracking-wider uppercase">QUICK_STYLE LUXE PILOT</p>
           </div>
         </div>
-        <span className="text-[10px] text-coral bg-coral/5 px-3 py-1 rounded-full border border-coral/15 font-bold">12m Delivery</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (isSpeaking) { stopSpeaking(); return; }
+              setTtsEnabled(prev => !prev);
+            }}
+            title={isSpeaking ? 'Stop speaking' : ttsEnabled ? 'Disable voice responses' : 'Enable voice responses'}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all ${
+              isSpeaking
+                ? 'bg-coral/15 border-coral/30 text-coral animate-pulse'
+                : ttsEnabled
+                ? 'bg-emerald/10 border-emerald/30 text-emerald'
+                : 'bg-gray-100 border-panelBorder text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            {isSpeaking ? <Volume2 className="w-3 h-3" /> : ttsEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+            <span>{isSpeaking ? 'Speaking...' : ttsEnabled ? 'Voice On' : 'Voice Off'}</span>
+          </button>
+          <span className="text-[10px] text-coral bg-coral/5 px-3 py-1 rounded-full border border-coral/15 font-bold">12m Delivery</span>
+        </div>
       </div>
 
       {/* Chat Logs Area */}

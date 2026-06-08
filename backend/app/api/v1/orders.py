@@ -81,3 +81,16 @@ async def get_order(order_id: str):
         tracking_url=f"/order-status?order_id={order_id}",
         created_at=datetime.utcnow().isoformat(),
     )
+
+@router.post("/{order_id}/return", response_model=OrderResponse)
+async def return_order(order_id: str):
+    """Initiate a return for an order."""
+    return OrderResponse(
+        order_id=order_id,
+        status="returned",
+        total_amount=0.00,
+        estimated_delivery_minutes=random.randint(15, 30),
+        rider_name=random.choice(MOCK_RIDERS),
+        tracking_url=f"/order-status?order_id={order_id}",
+        created_at=datetime.utcnow().isoformat(),
+    )

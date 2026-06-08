@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Zap, MapPin, Search, ShoppingBag, ChevronDown, Mic, MicOff, LayoutDashboard, User } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
@@ -27,6 +28,9 @@ export const Header: React.FC<HeaderProps> = ({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchIndex, setSearchIndex] = useState(0);
   const [fade, setFade] = useState(true);
+  const [searchValue, setSearchValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   // Zustand Store binding
   const { adminMode, setAdminMode, voiceSearching, setVoiceSearching } = useStore();
@@ -43,43 +47,12 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Web Speech API Integration
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-
   const toggleVoiceSearch = () => {
-    if (!recognition) {
-      alert("Speech recognition is not supported in this browser. Please try Google Chrome or MS Edge.");
-      return;
-    }
-
-    if (voiceSearching) {
-      recognition.stop();
-      setVoiceSearching(false);
-    } else {
-      setVoiceSearching(true);
-      recognition.lang = 'en-US';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        // Dispatch custom event to trigger AI Chat Pilot
-        window.dispatchEvent(new CustomEvent('voice-query', { detail: transcript }));
-        setVoiceSearching(false);
-      };
-
-      recognition.onerror = (e: any) => {
-        console.error("Speech recognition error:", e);
-        setVoiceSearching(false);
-      };
-
-      recognition.onend = () => {
-        setVoiceSearching(false);
-      };
-
-      recognition.start();
-    }
+    navigate('/chat');
+    // Allow navigation to complete before triggering the mic in Chat.tsx
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('start-voice-recording'));
+    }, 100);
   };
 
   return (
@@ -140,15 +113,33 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Center: Search pill with integrated voice microphone */}
         <div className="flex-1 max-w-lg relative group">
           <div className="w-full h-11 px-4 pl-11 pr-11 rounded-full bg-white border border-panelBorder/80 flex items-center justify-between text-sm text-gray-600 focus-within:border-[#C5A880] focus-within:ring-2 focus-within:ring-[#C5A880]/15 transition-all duration-300">
-            <div className="flex items-center gap-3 w-full">
+            <div className="flex items-center gap-3 w-full h-full" onClick={() => inputRef.current?.focus()}>
               <Search className="w-4 h-4 text-[#C5A880]" />
-              <span
-                className={`text-gray-600/80 pointer-events-none truncate select-none transition-opacity duration-300 ${
-                  fade ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                {searchQueries[searchIndex]}
-              </span>
+              <div className="relative w-full h-full flex items-center">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchValue.trim()) {
+                      navigate(`/collection?search=${encodeURIComponent(searchValue.trim())}`);
+                      setSearchValue('');
+                    }
+                  }}
+                  className="w-full bg-transparent border-none outline-none text-sm text-gray-800 placeholder-transparent absolute inset-0 z-10"
+                  autoFocus
+                />
+                {!searchValue && (
+                  <span
+                    className={`absolute left-0 pointer-events-none text-gray-600/80 truncate select-none transition-opacity duration-300 ${
+                      fade ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    {searchQueries[searchIndex]}
+                  </span>
+                )}
+              </div>
             </div>
             
             {/* Voice microphone button inside the search pill */}

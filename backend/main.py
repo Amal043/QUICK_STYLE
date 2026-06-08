@@ -1,5 +1,5 @@
-"""
-QUICK_STYLE — FastAPI Backend Entry Point
+﻿"""
+QUICK_STYLE â€” FastAPI Backend Entry Point
 Hyperlocal Fashion Platform with AI Stylist & Real-time Delivery Tracking
 """
 
@@ -67,7 +67,7 @@ async def lifespan(app: FastAPI):
     # Start the background Redis Pub/Sub listener
     app.state.redis_listener = asyncio.create_task(redis_pubsub_listener())
     
-    print(f"[STARTUP] QUICK_STYLE API ready — ENV: [{settings.ENV}]")
+    print(f"[STARTUP] QUICK_STYLE API ready â€” ENV: [{settings.ENV}]")
     yield
     
     # Cancel the background Redis Pub/Sub listener
@@ -86,7 +86,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="QUICK_STYLE API",
     description=(
-        "Hyperlocal Fashion Platform — Zero-inventory boutique delivery "
+        "Hyperlocal Fashion Platform â€” Zero-inventory boutique delivery "
         "with AI fit calibration, WebSocket live tracking, and 12-min delivery."
     ),
     version="1.0.0",
@@ -95,7 +95,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── CORS ──────────────────────────────────────────────────────────
+# â”€â”€ CORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -104,7 +104,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Routers ───────────────────────────────────────────────────────
+# â”€â”€ Routers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.include_router(auth.router,     prefix="/api/v1/auth",     tags=["Auth"])
 app.include_router(users.router,    prefix="/api/v1/users",    tags=["Users"])
 app.include_router(products.router, prefix="/api/v1/products", tags=["Products"])
@@ -124,3 +124,4 @@ async def health_check():
         "env": settings.ENV,
         "database": "MongoDB Atlas",
     }
+

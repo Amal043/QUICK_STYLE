@@ -113,6 +113,8 @@ export const mapProduct = (p: any): Product => {
     colors: p.colors || [],
     sizes_available: p.sizes_available || ['S', 'M', 'L', 'XL'],
     tags: p.tags || [],
+    return_policy: p.return_policy || null,
+    return_window_days: p.return_window_days || null,
   } as Product;
 };
 

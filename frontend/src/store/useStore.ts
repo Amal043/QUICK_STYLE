@@ -44,7 +44,7 @@ interface AppState {
   setActiveOrderId: (orderId: string | null) => void;
   setUserCoords: (coords: { lat: number; lng: number } | null) => void;
   addOrderToHistory: (order: any) => void;
-  updateOrderStatus: (orderId: string, status: string) => void;
+  updateOrderStatus: (orderId: string, status: string, trackingCreatedAt?: number) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -150,9 +150,11 @@ export const useStore = create<AppState>()(
     return { orderHistory: updatedHistory };
   }),
 
-  updateOrderStatus: (orderId, status) => set((state) => ({
-    orderHistory: state.orderHistory.map((o: any) => 
-      o.orderId === orderId ? { ...o, status } : o
+  updateOrderStatus: (orderId, status, trackingCreatedAt?) => set((state) => ({
+    orderHistory: state.orderHistory.map((o: any) =>
+      o.orderId === orderId
+        ? { ...o, status, ...(trackingCreatedAt !== undefined ? { trackingCreatedAt } : {}) }
+        : o
     )
   })),
     }),

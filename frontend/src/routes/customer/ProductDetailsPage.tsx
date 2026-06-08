@@ -798,6 +798,21 @@ export default function ProductDetailsPage() {
               </div>
             </div>
 
+            <div className="mb-10 p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <Truck className="w-5 h-5 text-on-surface" />
+                <p className="font-label-caps text-sm text-on-surface">12-MIN QUICK DELIVERY</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <p className="font-label-caps text-sm text-emerald-600 font-bold">
+                  ELIGIBLE FOR {product.return_policy?.toUpperCase() || 'EXCHANGE'} 
+                  <span className="text-xs text-on-surface-variant font-normal ml-2">({product.return_window_days || 5} days window)</span>
+                </p>
+              </div>
+            </div>
+
+
             <div className="mb-8 bg-surface-container p-4 rounded-xl border border-outline-variant/20">
               <div className="text-sm">
                 <p className="text-primary font-semibold flex items-center gap-1">
@@ -813,6 +828,14 @@ export default function ProductDetailsPage() {
                     <p className="text-on-surface-variant mt-1">From: {product.store_name} ({product.distance || 2} km away)</p>
                   </div>
                 </div>
+                {product.return_policy && (
+                  <div className="flex items-start gap-2 mt-3 pt-3 border-t border-outline-variant/20">
+                    <span className="material-symbols-outlined text-[#5C1324] text-[18px]">replay</span>
+                    <p className="text-sm font-semibold text-gray-700">
+                      Eligible for <span className="text-[#5C1324] uppercase">{product.return_policy}</span> under 5 days after delivery.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

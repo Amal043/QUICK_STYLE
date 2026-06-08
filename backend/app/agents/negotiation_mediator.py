@@ -65,7 +65,7 @@ async def negotiation_mediator_node(state: dict) -> dict:
     }
 
     model = genai.GenerativeModel(
-        model_name='gemini-2.5-flash',
+        model_name='gemini-2.5-flash-lite',
         safety_settings=safety_settings
     )
     

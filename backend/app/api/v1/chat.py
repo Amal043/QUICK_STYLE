@@ -7,6 +7,8 @@ import hashlib
 import json
 from app.db.connection import get_db
 from app.agents.supervisor import negotiation_graph
+from app.agents.pilot_agent import run_pilot_agent
+from app.utils.gemini_fallback import FallbackGenerativeModel
 from app.agents.safety_agent import pre_retrieval_guardrail, post_retrieval_guardrail
 from app.websocket.connection_manager import manager
 import os
@@ -36,6 +38,7 @@ class ChatResponse(BaseModel):
     session_id: str
     reply: str
     product_recommendations: list[dict] = []
+    commands: list[dict] = []
     timestamp: str
 
 def get_suggested_size(product: dict, extracted_size: str, user_profile: dict) -> str:
@@ -212,7 +215,6 @@ def create_mock_matching_product(item_tag: str, primary_product: dict) -> dict:
 @router.post("/message", response_model=ChatResponse)
 async def send_message(body: ChatMessage, db=Depends(get_db)):
     """Process a user chat message using the multi-agent Negotiation Graph."""
-    
     # Pre-Retrieval Guardrail
     is_safe, error_msg = await pre_retrieval_guardrail(body.message)
     if not is_safe:
@@ -239,156 +241,23 @@ async def send_message(body: ChatMessage, db=Depends(get_db)):
         except Exception:
             pass
     
-    initial_state = {
-        "session_id": body.session_id,
-        "user_id": user_id_to_pass,
-        "user_location": {"address": body.location},
-        "user_photo_url": body.user_photo_url,
-        "raw_query": body.message,
-        "extracted_entities": {},
-        "negotiation_round": 1,
-        "negotiation_history": [],
-        "negotiation_complete": False,
-        "stylist_proposal": None,
-        "anti_return_verdict": None,
-        "filtered_products": [],
-        "agent_log": []
-    }
-    
-    # Run intent detector first
-    from app.agents.intent_detector import intent_detector_node
-    intent_state = await intent_detector_node(initial_state)
-    initial_state.update(intent_state)
-    
-    extracted = intent_state.get("extracted_entities", {})
-    if extracted.get("is_shopping") is False and extracted.get("conversational_reply"):
-        return ChatResponse(
-            session_id=body.session_id,
-            reply=extracted["conversational_reply"],
-            product_recommendations=[],
-            timestamp=datetime.utcnow().isoformat(),
-        )
-    
-    # Run the graph
-    final_state = await negotiation_graph.ainvoke(initial_state)
-    
-    recommendations = []
-    raw_products = []
-    
-    if final_state.get("stylist_proposal"):
-        primary_proposal = final_state["stylist_proposal"]
-        primary_product = primary_proposal.get("product_data", {})
-        raw_products.append(primary_product)
-        
-        # 1. Complete outfit combination if requested
-        if extracted.get("wants_combination"):
-            pairs_well_with = primary_product.get("pairs_well_with", [])
-            for item_tag in pairs_well_with:
-                # Find matching product in DB or dynamically mock it
-                db_item = await db.products.find_one({
-                    "active": True,
-                    "$or": [
-                        {"name": {"$regex": item_tag.replace("_", " "), "$options": "i"}},
-                        {"tags": item_tag}
-                    ]
-                })
-                if db_item:
-                    raw_products.append(db_item)
-                else:
-                    raw_products.append(create_mock_matching_product(item_tag, primary_product))
-                    
-        # 2. Show multiple designs if user asked for multiple options or all designs
-        elif extracted.get("multiple_designs"):
-            for item in final_state.get("filtered_products", []):
-                # Avoid duplicates
-                if str(item.get("_id")) != str(primary_product.get("_id")):
-                    raw_products.append(item)
-                    
-    # Map raw product fields to the format expected by the frontend
-    mapped_recommendations = []
-    for item in raw_products:
-        prod_id = str(item.get("_id", item.get("id")))
-        s_size = get_suggested_size(item, extracted.get("size"), user_profile)
-        
-        mapped = {
-            "id": prod_id,
-            "name": item.get("name", "Unknown Product"),
-            "price": item.get("price", {"mrp": 1999, "selling_price": 1599, "discount_percent": 20}),
-            "suggested_size": s_size,
-            "fit_accuracy": item.get("fit_confidence_avg", 95),
-            "boutique": item.get("store_name", "Boutique A"),
-            "brand": item.get("brand", "Quick Style"),
-            "sizes_available": item.get("sizes_available", []),
-            "colors": item.get("colors", []),
-            "store_location": item.get("store_location", {"type": "Point", "coordinates": [88.36, 22.50]})
-        }
-        mapped_recommendations.append(mapped)
-        
-    # Generate stylized conversational response using Gemini
-    generation_config = genai.types.GenerationConfig(
-        temperature=0.7,
-    )
-    model = genai.GenerativeModel(
-        model_name='gemini-2.5-flash',
-        safety_settings=safety_settings
+    # Pass to Multi-Tasking Pilot Agent
+    pilot_result = await run_pilot_agent(
+        db=db,
+        session_id=body.session_id,
+        user_id=user_id_to_pass,
+        location=body.location,
+        message=body.message
     )
     
-    rec_details_list = []
-    for r in mapped_recommendations:
-        rec_details_list.append(
-            f"- {r['name']} by {r['brand']} from {r['boutique']} (₹{r['price']['selling_price']}) — Size Suggested: {r['suggested_size']} (Fit confidence: {r['fit_accuracy']}%)"
-        )
-    rec_text = "\n".join(rec_details_list)
-    
-    history_text = ""
-    if final_state.get("negotiation_history"):
-        history_text = json.dumps(final_state["negotiation_history"], default=str)
-        
-    prompt = f"""
-    You are the QUICK_STYLE Concierge, an elite, high-fashion AI stylist.
-    Draft a beautiful, friendly, and professional response to the user's styling/shopping request.
-    
-    User Query: "{body.message}"
-    
-    Negotiation/Fit Checks Status:
-    - Complete: {final_state.get("negotiation_complete")}
-    - History: {history_text}
-    
-    Recommended Items:
-    {rec_text}
-    
-    Guidelines:
-    1. Be extremely conversational, friendly, and knowledgeable, like a premium stylist.
-    2. Explicitly explain the outfit combination and why these items coordinate beautifully (if a combination/outfit is recommended).
-    3. Clearly explain why you selected the specific size for each item (especially if you adjusted the size based on the brand's size variance or the user's size profile).
-    4. Mention that the Anti-Return Agent has verified the fit accuracy to avoid returns.
-    5. Encourage the user to add the items directly to their bag.
-    6. Keep the tone sophisticated, stylish, and brief (2-4 paragraphs). Use HTML formatting like <br> or <strong> for clean styling on the web app. Do NOT use markdown code blocks or triple backticks in the response.
-    """
-    
-    try:
-        response = await model.generate_content_async(
-            prompt,
-            generation_config=generation_config
-        )
-        reply = response.text.strip()
-    except Exception as e:
-        print(f"Error generating Gemini chat reply: {e}")
-        # Simple fallback
-        if mapped_recommendations:
-            reply = f"Here is the selection I curated for you!<br><br><strong>Primary Product:</strong> {mapped_recommendations[0]['name']} (Size {mapped_recommendations[0]['suggested_size']})."
-            if len(mapped_recommendations) > 1:
-                reply += "<br><br>I've also added matching coordinate items to complete the look. All fits are verified by our Anti-Return agents."
-        else:
-            reply = "I couldn't find any products matching your criteria. Let's try another style or budget!"
-            
-    # Post-Retrieval Guardrail
-    safe_reply = await post_retrieval_guardrail(reply)
+    # Post-Retrieval Guardrail on the agent's reply
+    safe_reply = await post_retrieval_guardrail(pilot_result["reply"])
         
     return ChatResponse(
         session_id=body.session_id,
         reply=safe_reply,
-        product_recommendations=mapped_recommendations,
+        product_recommendations=pilot_result["product_recommendations"],
+        commands=pilot_result["commands"],
         timestamp=datetime.utcnow().isoformat(),
     )
 
@@ -430,7 +299,7 @@ async def send_audio_message(
         gemini_audio = genai.upload_file(temp_audio_path)
         
         # Use Gemini 1.5 Flash to transcribe and extract the user's intent
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = FallbackGenerativeModel('gemini-2.5-flash-lite')
         prompt = "Listen to this audio. It may be in Hindi, English, or a mix. Transcribe exactly what the user is asking for in English text, preserving their exact shopping intent."
         
         response = await model.generate_content_async([prompt, gemini_audio])

@@ -27,8 +27,8 @@ export default function LiveTrackingMap({ orderId }: LiveTrackingMapProps) {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // Connect to WebSocket for live tracking
-    ws.current = new WebSocket(`ws://localhost:8000/ws/tracking/${orderId}`);
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws.current = new WebSocket(`${wsProtocol}//${window.location.host}/ws/tracking/${orderId}`);
     
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);

@@ -257,14 +257,8 @@ async def virtual_try_on(body: VTORequest):
     else:
         person_description = "a stylish young person"
 
-    # Try-On generation using Pollinations AI
-    prompt_str = f"A professional fashion model photography of {person_description} wearing {body.garment_image_url.split('/')[-1].split('.')[0].replace('_', ' ')}, high fashion editorial look, neutral studio background, dramatic studio lighting, highly detailed fabric textures, photorealistic 8k"
-    
-    encoded_prompt = urllib.parse.quote(prompt_str)
-    pollinations_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=600&height=800&nologo=true&seed={random.randint(1, 100000)}"
-    
-    # Wrap in our proxy with local image fallback
-    generated_image_url = f"/api/v1/vto/image-proxy?url={urllib.parse.quote(pollinations_url)}&fallback={urllib.parse.quote(local_image)}"
+    # Use local curated model image — reliable, instant
+    generated_image_url = local_image
     advice = get_local_styling_advice(body.category)
     return VTOResponse(
         generated_image_url=generated_image_url,
@@ -325,7 +319,7 @@ async def virtual_try_on_upload(
         }}
         """
         
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash-lite')
         response = model.generate_content(
             [pil_user_image, prompt],
             generation_config=genai.types.GenerationConfig(
@@ -397,14 +391,10 @@ async def virtual_try_on_upload(
         except Exception as swap_err:
             print(f"Face swap workflow failed, falling back to Pollinations AI: {swap_err}")
 
-    # 3. Fallback to Pollinations AI Text-to-Image if face swap didn't happen
+    # 3. Fallback to local model image if face swap didn't happen
     if not swapped_image_saved:
-        prompt_str = f"A professional fashion model photography of {person_description} wearing {garment_name}, high fashion editorial look, neutral studio background, dramatic studio lighting, highly detailed fabric textures, photorealistic 8k"
-        encoded_prompt = urllib.parse.quote(prompt_str)
-        pollinations_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=600&height=800&nologo=true&seed={random.randint(1, 100000)}"
-        
-        # Wrap in our proxy to bypass CORS/CSP, with local model image fallback
-        generated_image_url = f"/api/v1/vto/image-proxy?url={urllib.parse.quote(pollinations_url)}&fallback={urllib.parse.quote(local_image)}"
+        # Use the curated local model image — reliable, instant, no external dependencies
+        generated_image_url = local_image
 
     return VTOResponse(
         generated_image_url=generated_image_url,

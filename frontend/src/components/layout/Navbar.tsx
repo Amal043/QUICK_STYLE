@@ -151,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-gradient-to-b from-[#FAF9F6] via-[#FAF9F6]/80 to-transparent backdrop-blur-[6px] border-none transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
         
         {/* Left: Logo & Location Picker */}
         <div className="flex items-center gap-6">
@@ -180,17 +180,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Center: Search pill with integrated voice microphone */}
-        <div className="flex-1 max-w-lg relative group">
+        <div className="flex-1 w-full max-w-5xl mx-12 relative group">
           <div className="w-full h-11 px-4 pl-11 pr-11 rounded-full bg-white border border-panelBorder/80 flex items-center justify-between text-sm text-gray-600 focus-within:border-[#C5A880] focus-within:ring-2 focus-within:ring-[#C5A880]/15 transition-all duration-300">
             <div className="flex items-center gap-3 w-full">
               <Search className="w-4 h-4 text-[#C5A880]" />
-              <span
-                className={`text-gray-600/80 pointer-events-none truncate select-none transition-opacity duration-300 ${
-                  fade ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                {searchQueries[searchIndex]}
-              </span>
+              <input
+                type="text"
+                placeholder={fade ? searchQueries[searchIndex] : ''}
+                className={`w-full bg-transparent border-none focus:outline-none text-gray-700 transition-opacity duration-300 ${fade ? 'opacity-100' : 'opacity-0'}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    const query = e.currentTarget.value.trim();
+                    navigate(`/collection?search=${encodeURIComponent(query)}`);
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
             </div>
             
             {/* Voice microphone button inside the search pill */}
@@ -209,8 +214,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right: Dashboard switcher, Cart, and Links */}
-        <div className="flex items-center gap-4">
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-gray-700 mr-2">
+        <div className="flex items-center gap-3">
+          <nav className="hidden lg:flex items-center gap-4 text-xs font-semibold text-gray-700 mr-1">
             <Link to="/" className={`hover:text-coral transition-colors ${location.pathname === '/' ? 'text-coral' : ''}`}>Home</Link>
             <Link to="/chat" className={`hover:text-coral transition-colors ${location.pathname === '/chat' ? 'text-coral' : ''}`}>AI Pilot</Link>
             

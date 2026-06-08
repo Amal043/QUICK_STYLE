@@ -18,8 +18,8 @@ export default function AdminAddProduct() {
   }, [adminMode]);
 
   // AI Chat State
-  const [chatMessages, setChatMessages] = useState<{role: 'system' | 'user' | 'agent', text: string, image?: string}[]>([
-    { role: 'agent', text: 'Hello! I am your AI Registry Assistant. Please upload a photo of the clothing you want to add, and I will generate stunning model images and register it for you.' }
+  const [chatMessages, setChatMessages] = useState<{role: 'system' | 'user' | 'agent', text: string, image?: string, images?: string[]}[]>([
+    { role: 'agent', text: 'Hello! I am your AI Registry Assistant. Upload 1–3 photos of the clothing item and I will analyze it with Gemini Vision, generate professional model photos, and register it instantly.' }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatImageFiles, setChatImageFiles] = useState<File[]>([]);
@@ -122,9 +122,9 @@ export default function AdminAddProduct() {
     setChatImagePreviews([]);
     setAudioBlob(null);
     
-    // Simulate AI thinking
+    // Show AI thinking
     setIsSubmitting(true);
-    setChatMessages(prev => [...prev, { role: 'system', text: 'Processing image and generating model photoshoots...' }]);
+    setChatMessages(prev => [...prev, { role: 'system', text: '🔍 Gemini Vision is analyzing your image... then generating AI model photos (may take ~30s)...' }]);
 
     try {
        // Make actual API call to backend agent
@@ -146,14 +146,16 @@ export default function AdminAddProduct() {
        setChatMessages(prev => prev.filter(m => m.role !== 'system'));
        
        if (data.status === 'success') {
-          setChatMessages(prev => [...prev, { 
-             role: 'agent', 
-             text: `Success! I've registered "${data.product.name}". The model images were generated perfectly. Check the store!`
+          const genImages: string[] = data.generated_images || [];
+          setChatMessages(prev => [...prev, {
+             role: 'agent',
+             text: data.reply || `✅ Registered "${data.product.name}" successfully!`,
+             images: genImages.length > 0 ? genImages : undefined
           }]);
           setSuccess(true);
        } else {
-          setChatMessages(prev => [...prev, { 
-             role: 'agent', 
+          setChatMessages(prev => [...prev, {
+             role: 'agent',
              text: data.reply || "Could you provide more details? (e.g. Price, Name, Category)"
           }]);
        }
@@ -246,12 +248,19 @@ export default function AdminAddProduct() {
               // AI Chatbot UI
               <div className="flex-1 flex flex-col bg-[#FAF8F5]">
                  <div className="bg-white border-b border-panelBorder p-5 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
-                       <Bot className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md">
+                       <Bot className="w-6 h-6 text-white" />
                     </div>
                     <div>
                        <h3 className="font-bold text-gray-900">Registry Agent</h3>
-                       <p className="text-xs text-blue-600 font-medium">Online · Powered by Pollinations.ai</p>
+                       <div className="flex items-center gap-2">
+                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                         <p className="text-xs text-purple-600 font-semibold">Online · Powered by Gemini Vision + Pollinations AI</p>
+                       </div>
+                    </div>
+                    <div className="ml-auto flex items-center gap-1 bg-purple-50 border border-purple-200 rounded-full px-2.5 py-1">
+                      <Sparkles className="w-3 h-3 text-purple-600" />
+                      <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">AI Powered</span>
                     </div>
                  </div>
                  
@@ -265,12 +274,30 @@ export default function AdminAddProduct() {
                           }`}>
                              {msg.role === 'system' ? (
                                 <div className="flex items-center justify-center gap-2">
-                                   <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> {msg.text}
+                                   <Loader2 className="w-4 h-4 animate-spin text-purple-500" /> {msg.text}
                                 </div>
                              ) : (
                                 <>
                                    {msg.image && <img src={msg.image} className="w-full max-w-[200px] rounded-lg mb-3 object-cover" alt="Upload" />}
                                    <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                                   {msg.images && msg.images.length > 0 && (
+                                     <div className="mt-3">
+                                       <p className="text-[10px] uppercase tracking-wider font-bold text-purple-600 mb-2 flex items-center gap-1">
+                                         <Sparkles className="w-3 h-3" /> AI-Generated Model Photos
+                                       </p>
+                                       <div className="flex gap-2 flex-wrap">
+                                         {msg.images.map((imgUrl, i) => (
+                                           <img
+                                             key={i}
+                                             src={imgUrl}
+                                             alt={`AI Model ${i + 1}`}
+                                             className="h-36 w-24 object-cover rounded-xl border-2 border-purple-200 shadow-sm"
+                                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                           />
+                                         ))}
+                                       </div>
+                                     </div>
+                                   )}
                                 </>
                              )}
                           </div>

@@ -20,7 +20,7 @@ async def intent_detector_node(state: dict) -> dict:
     """
     query = state.get("raw_query", "")
     
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    model = genai.GenerativeModel("gemini-2.5-flash-lite")
     
     prompt = f"""
     Analyze the user's query and determine if it is a shopping request (e.g., looking for clothes, shoes, styling) or just a conversational greeting/general chat.

@@ -62,6 +62,8 @@ class ProductCreate(BaseModel):
     store_location: Dict[str, float]  # {lat, lon}
     stock: Dict[str, int] = {}
     fit_confidence_avg: int = 80
+    return_policy: str = "Refund"
+    return_window_days: int = 5
 
 
 class ProductResponse(BaseModel):
@@ -86,6 +88,8 @@ class ProductResponse(BaseModel):
     rating: ProductRating = ProductRating()
     fit_confidence_avg: int
     active: bool = True
+    return_policy: str = "Refund"
+    return_window_days: int = 5
     created_at: datetime
 
 
@@ -113,5 +117,7 @@ class ProductDocument(BaseModel):
     embedding: List[float] = []       # 768-dim vector for semantic search
     rating: ProductRating = ProductRating()
     fit_confidence_avg: int = 80
+    return_policy: str = "Refund"
+    return_window_days: int = 5
     active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)

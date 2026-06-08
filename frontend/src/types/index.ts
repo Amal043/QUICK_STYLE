@@ -26,6 +26,8 @@ export interface Product {
   colors: any[];
   sizes_available: string[];
   tags: string[];
+  return_policy?: string;
+  return_window_days?: number;
 }
 
 export interface CartItem {

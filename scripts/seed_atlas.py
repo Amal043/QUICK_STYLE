@@ -839,6 +839,41 @@ DELIVERY_PARTNERS = [
         "vehicle": "bike",
         "status": "vacant",
         "current_location": {"type": "Point", "coordinates": [88.3650, 22.4980]}, # Near Jadavpur
+    },
+    {
+        "name": "Arun Sharma",
+        "phone": "+919876543006",
+        "vehicle": "scooter",
+        "status": "vacant",
+        "current_location": {"type": "Point", "coordinates": [88.3550, 22.5600]}, # Central Kolkata
+    },
+    {
+        "name": "Bikash Paul",
+        "phone": "+919876543007",
+        "vehicle": "bike",
+        "status": "vacant",
+        "current_location": {"type": "Point", "coordinates": [88.4000, 22.5200]}, # East Kolkata
+    },
+    {
+        "name": "Suraj Mondal",
+        "phone": "+919876543008",
+        "vehicle": "scooter",
+        "status": "vacant",
+        "current_location": {"type": "Point", "coordinates": [88.3800, 22.6000]}, # North Kolkata
+    },
+    {
+        "name": "Karan Guha",
+        "phone": "+919876543009",
+        "vehicle": "bike",
+        "status": "vacant",
+        "current_location": {"type": "Point", "coordinates": [88.3100, 22.5300]}, # West / Alipore
+    },
+    {
+        "name": "Mohammad Ali",
+        "phone": "+919876543010",
+        "vehicle": "scooter",
+        "status": "vacant",
+        "current_location": {"type": "Point", "coordinates": [88.4100, 22.6200]}, # Airport area
     }
 ]
 
@@ -860,6 +895,12 @@ async def seed():
     await db.products.drop()
     await db.products.create_index([("store_location", "2dsphere")])
     await db.products.create_index([("name", "text"), ("description", "text"), ("tags", "text")])
+    
+    import random
+    for p in PRODUCTS:
+        if "return_policy" not in p:
+            p["return_policy"] = random.choice(["Refund", "Exchange"])
+            
     result = await db.products.insert_many(PRODUCTS)
     print(f"Seeded {len(result.inserted_ids)} products")
 

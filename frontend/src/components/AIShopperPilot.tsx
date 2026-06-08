@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Sparkles, Send, User, Zap, Mic, MicOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bot, Sparkles, Send, User, Zap, Mic, MicOff, Search } from 'lucide-react';
 import type { Message, Size } from '../types';
 import { useStore } from '../store/useStore';
 
@@ -25,6 +26,7 @@ export const AIShopperPilot: React.FC<AIShopperPilotProps> = ({
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // Zustand voice status
   const { voiceSearching, setVoiceSearching } = useStore();
@@ -92,7 +94,16 @@ export const AIShopperPilot: React.FC<AIShopperPilotProps> = ({
           </button>
         );
       } else {
-        replyText = `Interesting styling query! Based on your location near <b>${currentLocation}</b>, I am browsing local boutiques.<br><br>For a tailored recommendation, check out the <b>Amethyst Knit Sweater</b> (0.5 km away) for cozy elegance, or the <b>Aero-Knit Activewear Tee</b> (1.9 km away) in Electric Coral if you need something lightweight. Let me know what styles catch your eye!`;
+        replyText = `Interesting styling query! Based on your location near <b>${currentLocation}</b>, I am browsing local boutiques for "${text}".<br><br>I've found some potential matches in our collection.`;
+        actionNode = (
+          <button
+            onClick={() => navigate(`/collection?search=${encodeURIComponent(text)}`)}
+            className="mt-2.5 px-4 py-2.5 rounded-full bg-[#5C1324] hover:bg-[#430E1A] text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 active:scale-95 shadow-md transition-all border border-[#5C1324]"
+          >
+            <Search className="w-3.5 h-3.5 text-white" />
+            <span>View Catalog Matches</span>
+          </button>
+        );
       }
 
       const botMsg: Message = {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navbar } from './components/layout/Navbar';
@@ -21,6 +21,7 @@ import Wishlist from './routes/customer/Wishlist';
 import AdminDashboard from './routes/admin/Dashboard';
 import AgentBrain from './routes/admin/AgentBrain';
 import AdminAddProduct from './routes/admin/AdminAddProduct';
+import ExchangePortal from './routes/customer/ExchangePortal';
 
 
 const queryClient = new QueryClient();
@@ -47,6 +48,8 @@ function AppShell() {
     addToCart,
     setActiveOrderId,
     addOrderToHistory,
+    orderHistory,
+    updateOrderStatus
   } = useStore();
   const navigate = useNavigate();
 
@@ -76,6 +79,7 @@ function AppShell() {
 
       addOrderToHistory({
         orderId,
+        createdAt: Date.now(),
         date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
         amount: Math.max(0, Math.round(finalAmount)),
@@ -88,7 +92,8 @@ function AppShell() {
           size: item.size,
           quantity: item.quantity,
           store_name: item.product.store_name,
-          store_location: item.product.store_location
+          store_location: item.product.store_location,
+          return_policy: item.product.return_policy || 'Refund'
         }],
         status: 'In Transit'
       });
@@ -100,7 +105,7 @@ function AppShell() {
     // If single item, navigate directly to that order's details page.
     if (newOrderIds.length === 1) {
       setActiveOrderId(newOrderIds[0]);
-      navigate(`/order-details/${newOrderIds[0]}`);
+      navigate(`/order-details/${newOrderIds[0]}?createdAt=${Date.now()}`);
     } else {
       setActiveOrderId(null);
       navigate(`/history`);
@@ -134,6 +139,7 @@ function AppShell() {
           <Route path="/product/:id" element={<ProductDetailsPage />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/order-details/:orderId" element={<OrderDetails />} />
+          <Route path="/exchange/:orderId" element={<ExchangePortal />} />
           <Route path="/account" element={<Account />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
