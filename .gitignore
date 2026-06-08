@@ -24,6 +24,8 @@ build/
 .env.local
 .env.production
 .env*.local
+google-credentials.json
+backend/google-credentials.json
 
 # ─── Docker ────────────────────────────────────────────────────────
 # (docker-compose.yml IS committed — only ignore local overrides)

@@ -37,6 +37,8 @@ export default function Chat() {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // Scroll to bottom whenever messages list grows
   useEffect(() => {
@@ -82,6 +84,43 @@ export default function Chat() {
         tags: []
       } as any, size);
     }, 100);
+  };
+
+  const handleVirtualTryOn = async (recProduct: any) => {
+    setIsTyping(true);
+    try {
+      const response = await fetch('/api/v1/vto/try-on', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_image_url: 'placeholder_user_image',
+          garment_image_url: mapImage(recProduct.name),
+          category: recProduct.category || 'tops'
+        })
+      });
+      const data = await response.json();
+      setIsTyping(false);
+      
+      const vtoMsg: Message = {
+        id: Math.random().toString(),
+        sender: 'bot',
+        text: `Here is a Virtual Try-On of the **${recProduct.name}**! ✨`,
+        timestamp: new Date()
+      };
+      
+      (vtoMsg as any).action = (
+        <div className="mt-2 rounded-xl overflow-hidden border border-panelBorder/30">
+          <img src={data.generated_image_url} alt="Virtual Try On" className="w-full max-h-64 object-cover" />
+        </div>
+      );
+      
+      setMessages(prev => [...prev, vtoMsg]);
+    } catch (err) {
+      console.error(err);
+      setIsTyping(false);
+    }
   };
 
   const appendUserMessage = async (text: string) => {
@@ -151,13 +190,22 @@ export default function Chat() {
                     </div>
                   </div>
                   
-                  <button
-                    onClick={() => handleSelectAndAddToCart(rec, rec.suggested_size as Size)}
-                    className="mt-2.5 w-full py-1.5 rounded-xl bg-[#5C1324] hover:bg-[#430E1A] text-white text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 active:scale-95 shadow-sm transition-all cursor-pointer"
-                  >
-                    <Zap className="w-2.5 h-2.5 fill-white text-white" />
-                    <span>Add to Bag ({rec.suggested_size})</span>
-                  </button>
+                  <div className="flex gap-1.5 mt-2.5">
+                    <button
+                      onClick={() => handleSelectAndAddToCart(rec, rec.suggested_size as Size)}
+                      className="flex-1 py-1.5 rounded-xl bg-[#5C1324] hover:bg-[#430E1A] text-white text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm transition-all cursor-pointer"
+                    >
+                      <Zap className="w-2.5 h-2.5 fill-white text-white" />
+                      <span>Bag ({rec.suggested_size})</span>
+                    </button>
+                    <button
+                      onClick={() => handleVirtualTryOn(rec)}
+                      className="flex-1 py-1.5 rounded-xl bg-[#FAF0F1] hover:bg-[#F2DCDD] text-[#5C1324] border border-[#5C1324]/20 text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-2.5 h-2.5 text-[#5C1324]" />
+                      <span>Try it On</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -218,44 +266,131 @@ export default function Chat() {
     setInputText('');
   };
 
-  // Native Web Speech API
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-
-  const handleLocalMic = () => {
-    if (!recognition) {
-      alert("Speech recognition is not supported in this browser.");
-      return;
-    }
-
+  // Native MediaRecorder API for Voice
+  const handleLocalMic = async () => {
     if (voiceSearching) {
-      recognition.stop();
+      // Stop recording
+      mediaRecorderRef.current?.stop();
       setVoiceSearching(false);
     } else {
-      setVoiceSearching(true);
-      recognition.lang = 'en-US';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+      // Start recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
 
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputText(transcript);
-        setVoiceSearching(false);
-        setTimeout(() => {
-          appendUserMessage(transcript);
-          setInputText('');
-        }, 800);
-      };
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
 
-      recognition.onerror = () => {
-        setVoiceSearching(false);
-      };
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          stream.getTracks().forEach(track => track.stop());
+          
+          setIsTyping(true);
+          const userMsg: Message = {
+            id: Math.random().toString(),
+            sender: 'user',
+            text: '🎤 *Audio Message*',
+            timestamp: new Date()
+          };
+          setMessages((prev) => [...prev, userMsg]);
+          
+          try {
+            const formData = new FormData();
+            formData.append('audio_file', audioBlob, 'audio.webm');
+            formData.append('session_id', 'demo-session');
+            formData.append('location', currentLocation || 'NIT Jamshedpur Campus');
 
-      recognition.onend = () => {
-        setVoiceSearching(false);
-      };
+            const response = await fetch('/api/v1/chat/message/audio', {
+              method: 'POST',
+              body: formData
+            });
 
-      recognition.start();
+            if (!response.ok) throw new Error('Failed to process audio');
+            const data = await response.json();
+            
+            // Re-use logic to render AI response
+            setIsTyping(false);
+            
+            let actionNode: React.ReactNode = null;
+            if (data.product_recommendations && data.product_recommendations.length > 0) {
+              actionNode = (
+                <div className="mt-3 space-y-2 w-full">
+                  <p className="text-[10px] uppercase tracking-wider font-extrabold text-[#A27B5C] mb-1.5 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#A27B5C]" />
+                    <span>Curated Styling Selection</span>
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
+                    {data.product_recommendations.map((rec: any) => (
+                      <div key={rec.id} className="bg-white rounded-2xl border border-panelBorder/60 p-3 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300">
+                        <div>
+                          <div className="relative w-full h-24 bg-[#FAF8F5] rounded-xl overflow-hidden mb-2 border border-panelBorder/30">
+                            <img 
+                              src={mapImage(rec.name)} 
+                              alt={rec.name}
+                              className="w-full h-full object-contain p-2"
+                            />
+                            <span className="absolute top-1.5 right-1.5 bg-[#5C1324] text-white text-[8px] font-bold px-2 py-0.5 rounded-full">
+                              {rec.fit_accuracy}% Fit
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-gray-900 text-[11px] line-clamp-1">{rec.name}</h4>
+                          <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">{rec.brand} • {rec.boutique}</p>
+                          
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <span className="text-[11px] font-bold text-gray-900">₹{rec.price.selling_price}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-1.5 mt-2.5">
+                          <button
+                            onClick={() => handleSelectAndAddToCart(rec, rec.suggested_size as Size)}
+                            className="flex-1 py-1.5 rounded-xl bg-[#5C1324] hover:bg-[#430E1A] text-white text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm transition-all cursor-pointer"
+                          >
+                            <Zap className="w-2.5 h-2.5 fill-white text-white" />
+                            <span>Bag ({rec.suggested_size})</span>
+                          </button>
+                          <button
+                            onClick={() => handleVirtualTryOn(rec)}
+                            className="flex-1 py-1.5 rounded-xl bg-[#FAF0F1] hover:bg-[#F2DCDD] text-[#5C1324] border border-[#5C1324]/20 text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm transition-all cursor-pointer"
+                          >
+                            <Sparkles className="w-2.5 h-2.5 text-[#5C1324]" />
+                            <span>Try it On</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            
+            const botMsg: Message = {
+              id: Math.random().toString(),
+              sender: 'bot',
+              text: data.reply.replace(/\n/g, '<br>'),
+              timestamp: new Date()
+            };
+            
+            if (actionNode) (botMsg as any).action = actionNode;
+            setMessages((prev) => [...prev, botMsg]);
+
+          } catch (error) {
+            console.error("Error uploading audio", error);
+            setIsTyping(false);
+          }
+        };
+
+        mediaRecorder.start();
+        setVoiceSearching(true);
+      } catch (err) {
+        console.error("Microphone access denied", err);
+        alert("Please allow microphone access to use voice search.");
+      }
     }
   };
 

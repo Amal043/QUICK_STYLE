@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuickStyle × Google Cloud — Deep Research Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050810;
+    --bg2: #0b1020;
+    --bg3: #111827;
+    --surface: #161d2e;
+    --border: rgba(255,255,255,0.07);
+    --accent: #6ee7f7;
+    --accent2: #a78bfa;
+    --accent3: #f472b6;
+    --accent4: #34d399;
+    --warn: #fbbf24;
+    --text: #e8eef7;
+    --muted: #7a8ba8;
+    --tier1: #6ee7f7;
+    --tier2: #a78bfa;
+    --tier3: #fbbf24;
+    --free: #34d399;
+    --paid: #f87171;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 60px;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 40%, rgba(110,231,247,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 20% 70%, rgba(167,139,250,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 50% 10%, rgba(244,114,182,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(110,231,247,0.08);
+    border: 1px solid rgba(110,231,247,0.2);
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 28px;
+    width: fit-content;
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(42px, 6vw, 76px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    max-width: 900px;
+    margin-bottom: 24px;
+  }
+
+  .hero h1 span.qs { color: var(--accent); }
+  .hero h1 span.gc { color: var(--accent2); }
+
+  .hero-sub {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 620px;
+    margin-bottom: 48px;
+    font-weight: 300;
+    line-height: 1.8;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+
+  .hero-meta-item { }
+  .hero-meta-item .num {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .hero-meta-item .label {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .divider-line {
+    width: 40px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    margin: 16px 0;
+  }
+
+  /* ── CONTAINER ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 60px;
+  }
+
+  /* ── SECTION ── */
+  section {
+    padding: 80px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 3vw, 40px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+
+  .section-desc {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 680px;
+    margin-bottom: 50px;
+    line-height: 1.8;
+  }
+
+  /* ── PITCH SUMMARY ── */
+  .pitch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+
+  .pitch-cell {
+    background: var(--surface);
+    padding: 28px 24px;
+  }
+
+  .pitch-cell .icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .pitch-cell .ptitle {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .pitch-cell p {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  .agent-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .agent-tag {
+    background: rgba(110,231,247,0.07);
+    border: 1px solid rgba(110,231,247,0.18);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.03em;
+  }
+
+  .agent-tag.purple {
+    background: rgba(167,139,250,0.07);
+    border-color: rgba(167,139,250,0.18);
+    color: var(--accent2);
+  }
+
+  .agent-tag.pink {
+    background: rgba(244,114,182,0.07);
+    border-color: rgba(244,114,182,0.18);
+    color: var(--accent3);
+  }
+
+  .agent-tag.green {
+    background: rgba(52,211,153,0.07);
+    border-color: rgba(52,211,153,0.18);
+    color: var(--accent4);
+  }
+
+  /* ── TOOL CARDS ── */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.25s, transform 0.25s;
+  }
+
+  .tool-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(110,231,247,0.25);
+  }
+
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--card-accent, var(--accent)), transparent);
+  }
+
+  .tool-card.purple { --card-accent: var(--accent2); }
+  .tool-card.pink   { --card-accent: var(--accent3); }
+  .tool-card.green  { --card-accent: var(--accent4); }
+  .tool-card.warn   { --card-accent: var(--warn); }
+  .tool-card.cyan   { --card-accent: var(--accent); }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+
+  .card-icon {
+    font-size: 26px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .card-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+  }
+
+  .badge.free   { background: rgba(52,211,153,0.12); color: var(--free); border: 1px solid rgba(52,211,153,0.25); }
+  .badge.paid   { background: rgba(248,113,113,0.12); color: var(--paid); border: 1px solid rgba(248,113,113,0.25); }
+  .badge.credit { background: rgba(251,191,36,0.12); color: var(--warn); border: 1px solid rgba(251,191,36,0.25); }
+  .badge.core   { background: rgba(110,231,247,0.12); color: var(--accent); border: 1px solid rgba(110,231,247,0.25); }
+  .badge.new    { background: rgba(244,114,182,0.12); color: var(--accent3); border: 1px solid rgba(244,114,182,0.25); }
+
+  .card-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+
+  .card-category {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .card-what {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-contribution-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--card-accent, var(--accent));
+    margin-bottom: 10px;
+  }
+
+  .card-contribution {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .contrib-points {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .contrib-points li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .contrib-points li::before {
+    content: '→';
+    color: var(--card-accent, var(--accent));
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .pricing-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+
+  .pricing-box .p-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .pricing-box .p-text {
+    color: var(--text);
+  }
+
+  .pricing-box .p-text .highlight {
+    color: var(--free);
+    font-weight: 500;
+  }
+
+  .pricing-box .p-text .warn-text {
+    color: var(--warn);
+    font-weight: 500;
+  }
+
+  /* ── TIER HEADING ── */
+  .tier-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .tier-pill {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+  }
+
+  .tier-pill.t1 { background: rgba(110,231,247,0.12); color: var(--tier1); border: 1px solid rgba(110,231,247,0.3); }
+  .tier-pill.t2 { background: rgba(167,139,250,0.12); color: var(--tier2); border: 1px solid rgba(167,139,250,0.3); }
+  .tier-pill.t3 { background: rgba(251,191,36,0.12); color: var(--tier3); border: 1px solid rgba(251,191,36,0.3); }
+  .tier-pill.t4 { background: rgba(244,114,182,0.12); color: var(--accent3); border: 1px solid rgba(244,114,182,0.3); }
+
+  .tier-desc {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ── FULL-WIDTH CARD ── */
+  .tool-card.full {
+    grid-column: 1 / -1;
+  }
+
+  .full-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  /* ── INNOVATION ── */
+  .innovation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  .innovation-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 26px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .innovation-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(167,139,250,0.06), transparent);
+    pointer-events: none;
+  }
+
+  .innovation-card .inv-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 42px;
+    font-weight: 800;
+    color: rgba(167,139,250,0.12);
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+
+  .innovation-card .inv-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+
+  .innovation-card .inv-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+
+  .innovation-card .inv-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .inv-tool-tag {
+    background: rgba(167,139,250,0.08);
+    border: 1px solid rgba(167,139,250,0.2);
+    color: var(--accent2);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 8px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── COST TABLE ── */
+  .cost-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  .cost-table thead tr {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .cost-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .cost-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+  }
+
+  .cost-table tbody tr:last-child td { border-bottom: none; }
+
+  .cost-table tbody tr:hover td {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .cost-table .tool-col {
+    font-weight: 500;
+    color: var(--text);
+    width: 22%;
+  }
+
+  .cost-table .usage-col {
+    color: var(--muted);
+    font-size: 13px;
+    width: 28%;
+  }
+
+  .cost-table .price-col {
+    width: 25%;
+  }
+
+  .cost-table .note-col {
+    color: var(--muted);
+    font-size: 12.5px;
+    width: 25%;
+  }
+
+  .pill-free {
+    display: inline-block;
+    background: rgba(52,211,153,0.1);
+    color: var(--free);
+    border: 1px solid rgba(52,211,153,0.25);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .pill-paid {
+    display: inline-block;
+    background: rgba(248,113,113,0.1);
+    color: var(--paid);
+    border: 1px solid rgba(248,113,113,0.25);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .pill-credit {
+    display: inline-block;
+    background: rgba(251,191,36,0.1);
+    color: var(--warn);
+    border: 1px solid rgba(251,191,36,0.25);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* ── ROADMAP ── */
+  .roadmap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .roadmap-phase {
+    background: var(--surface);
+    padding: 28px 24px;
+  }
+
+  .roadmap-phase .ph-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .roadmap-phase .ph-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  .roadmap-phase .ph-title span {
+    color: var(--accent);
+  }
+
+  .ph-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+
+  .ph-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  .ph-dot.c { background: var(--accent); }
+  .ph-dot.p { background: var(--accent2); }
+  .ph-dot.k { background: var(--accent3); }
+
+  /* ── EXCLUDED ── */
+  .excluded-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .excluded-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .excluded-card .ex-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: var(--muted);
+  }
+
+  .excluded-card .ex-reason {
+    font-size: 12.5px;
+    color: rgba(120,140,168,0.7);
+    line-height: 1.6;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  footer strong { color: var(--text); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--surface); border-radius: 3px; }
+
+  @media (max-width: 900px) {
+    .hero { padding: 60px 28px; }
+    .container { padding: 0 28px; }
+    .tools-grid { grid-template-columns: 1fr; }
+    .pitch-grid { grid-template-columns: 1fr; }
+    .innovation-grid { grid-template-columns: 1fr; }
+    .roadmap-grid { grid-template-columns: 1fr; }
+    .excluded-grid { grid-template-columns: 1fr 1fr; }
+    .full-inner { grid-template-columns: 1fr; }
+    footer { padding: 30px 28px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">
+      <span>⚡</span>
+      Deep Research Report · June 2026
+    </div>
+    <h1>
+      <span class="qs">Quick_Style</span> ×<br>
+      <span class="gc">Google Cloud</span> Stack
+    </h1>
+    <p class="hero-sub">
+      A comprehensive analysis of every Google ADK, SDK, API, and infrastructure tool available — evaluated exclusively for their real contribution to India's first quick-commerce fashion platform.
+    </p>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <div class="num">12</div>
+        <div class="divider-line"></div>
+        <div class="label">Recommended Tools</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="num">5</div>
+        <div class="divider-line"></div>
+        <div class="label">Innovation Proposals</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="num">6</div>
+        <div class="divider-line"></div>
+        <div class="label">Tools Excluded (Why)</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="num">$300+</div>
+        <div class="divider-line"></div>
+        <div class="label">Free GCP Credits Available</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PITCH SUMMARY ── -->
+<section>
+  <div class="container">
+    <div class="section-label">Context</div>
+    <h2 class="section-title">Quick_Style — What You're Building</h2>
+    <p class="section-desc">
+      Understanding the platform deeply before assigning tools. This section captures the critical capabilities from your pitch deck that shape every tool recommendation below.
+    </p>
+
+    <div class="pitch-grid">
+      <div class="pitch-cell">
+        <div class="icon">⚡</div>
+        <div class="ptitle">Core Promise</div>
+        <p>India's first quick-commerce platform for fashion. Sub-12-minute delivery from hyper-local boutiques to urban shoppers — powered entirely by specialised AI agents.</p>
+      </div>
+      <div class="pitch-cell">
+        <div class="icon">🏪</div>
+        <div class="ptitle">Supply Side Problem</div>
+        <p>5 million invisible Indian boutiques with no digital presence, no catalogue systems, and zero e-commerce infrastructure — despite sitting metres from potential customers.</p>
+      </div>
+      <div class="pitch-cell">
+        <div class="icon">🔁</div>
+        <div class="ptitle">Demand Side Problem</div>
+        <p>40%+ return rates driven by poor fit guidance, misleading imagery, COD abuse, and no quality accountability. The platform must kill returns structurally, not absorb them.</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 28px;">
+      <div class="ptitle" style="font-size:11px; letter-spacing:0.1em; color:var(--muted); margin-bottom:12px;">YOUR 5-AGENT ARCHITECTURE — WHAT NEEDS TO BE BUILT</div>
+      <div class="agent-list">
+        <span class="agent-tag">🎨 Stylist Agent (NL + Voice Search + Autonomous Checkout)</span>
+        <span class="agent-tag purple">🗺️ Delivery Route Agent (Real-Time 12-Min Routing)</span>
+        <span class="agent-tag pink">📸 Boutique Onboarding Agent (Flat Photo → SKU in 60s)</span>
+        <span class="agent-tag green">⚖️ NEGO BRAIN v3.0 (Return Mediation + COD Abuse)</span>
+        <span class="agent-tag">⭐ Premium Recommendation Engine (Relevance + Paid Boost)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TIER 1 TOOLS ── -->
+<section>
+  <div class="container">
+    <div class="section-label">Tier 1 — Mission Critical</div>
+    <h2 class="section-title">Core Frameworks &amp; AI Engines</h2>
+    <p class="section-desc">
+      These tools are not optional extras — they ARE the product. Each one directly powers a named agent or feature in your pitch deck. Build nothing before integrating these.
+    </p>
+
+    <div class="tier-heading">
+      <div class="tier-pill t1">Tier 1 — Must Have</div>
+      <div class="tier-desc">Directly powers your named agents. These form the technical foundation.</div>
+    </div>
+
+    <div class="tools-grid">
+
+      <!-- CARD: ADK -->
+      <div class="tool-card cyan full">
+        <div class="full-inner">
+          <div>
+            <div class="card-header">
+              <div>
+                <div class="card-icon">🧠</div>
+                <div class="card-name">Google Agent Development Kit (ADK)</div>
+                <div class="card-category">Multi-Agent Orchestration Framework</div>
+              </div>
+              <div class="card-badges">
+                <span class="badge free">Free (Open Source)</span>
+                <span class="badge core">Core</span>
+              </div>
+            </div>
+            <div class="card-what">
+              ADK is Google's open-source, production-grade Python/TypeScript/Go framework for building multi-agent AI systems. It handles agent orchestration, tool calls, state management, session memory, and inter-agent communication — all without boilerplate. ADK is optimized for Gemini but supports 100+ models via LiteLLM. Its killer feature is native multi-agent orchestration — agents that delegate subtasks to each other without glue code.
+            </div>
+          </div>
+          <div>
+            <div class="card-contribution-label">How it powers Quick_Style</div>
+            <ul class="contrib-points">
+              <li>Orchestrates all 5 agents (Stylist, Route, Onboarding, NEGO BRAIN, Recommendation) as a <strong>single composable multi-agent system</strong> — agents hand off tasks to each other seamlessly.</li>
+              <li>The <strong>Stylist Agent</strong> uses ADK's LlmAgent with NL understanding + tool calls to query boutique inventory, filter by size/occasion/budget, and trigger autonomous checkout.</li>
+              <li><strong>SequentialAgent</strong> and <strong>ParallelAgent</strong> patterns handle the boutique onboarding pipeline (photograph → detect → generate image → write description → publish) as parallel steps.</li>
+              <li>ADK's built-in <strong>State and Session management</strong> powers NEGO BRAIN's multi-turn return conversations with persistent memory of prior interactions.</li>
+              <li>The <strong>LoopAgent</strong> pattern continuously re-evaluates delivery routes mid-journey when disruptions occur.</li>
+              <li>One-command deployment to Cloud Run or Agent Engine with built-in OpenTelemetry tracing for production observability.</li>
+            </ul>
+            <div class="pricing-box">
+              <div class="p-label">Pricing</div>
+              <div class="p-text"><span class="highlight">Completely free</span> — ADK itself is Apache 2.0 open source. You only pay for the underlying model calls (Gemini API) and the infrastructure you deploy to. No license fees. No per-agent costs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD: Vertex AI Virtual Try-On -->
+      <div class="tool-card cyan">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">👗</div>
+            <div class="card-name">Vertex AI Virtual Try-On (Imagen)</div>
+            <div class="card-category">Image Generation / Fashion AI</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge credit">$300 GCP Credit</span>
+            <span class="badge core">Core</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Vertex AI's dedicated Virtual Try-On model (virtual-try-on-preview-08-04) is a custom diffusion model that takes two inputs — a person image and a garment image — and generates a photorealistic image of that person wearing that garment. It preserves the person's body shape, pose, lighting, and the garment's texture, folds, and shadows with high fidelity. Updated Sept 2025 for better body preservation. Supports tops, bottoms, one-pieces, and footwear.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>This <strong>is</strong> your Virtual Try-On feature from Slide 3. Upload user's photo + boutique garment → generate try-on image.</li>
+          <li>Directly attacks the 40% return rate problem at source — "see it on yourself before buying" creates fit confidence.</li>
+          <li>Google reports <strong>60% more high-quality views</strong> on Google Shopping for merchants with VTO enabled.</li>
+          <li>Can also be used for boutique catalogue enrichment — generate multiple model shots from a single flat garment photo.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text">Billed under <span class="warn-text">Imagen pricing on Vertex AI</span>. Starts with $300 GCP free trial. Image generation typically $0.0001–$0.002 per image. VTO-specific pricing is under Imagen SKU — use GCP free trial credits to validate at MVP scale.</div>
+        </div>
+      </div>
+
+      <!-- CARD: Imagen 4 -->
+      <div class="tool-card pink">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">📸</div>
+            <div class="card-name">Imagen 4 (Vertex AI)</div>
+            <div class="card-category">Image Generation / Product Photography</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge credit">$300 GCP Credit</span>
+            <span class="badge core">Core</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Imagen 4 (imagen-4.0-generate-001 and imagen-4.0-fast-generate-001) is Google's highest-fidelity text-to-image and image-editing model. For fashion specifically, it excels at generating studio-quality product images, editing backgrounds, creating flat-lay visuals with consistent lighting, and generating ghost mannequin or virtual model shots. Its "fast" variant handles high-volume catalogue generation economically.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>Powers the <strong>Boutique Onboarding Agent</strong> — boutique photographs a flat garment, Imagen 4 generates the professional mannequin-framed product image that gets published as the SKU listing.</li>
+          <li>Background removal and neutral-studio replacement for consistent catalogue aesthetics across all boutiques.</li>
+          <li>Imagen 4 is specifically cited for product accuracy and text legibility — critical for preserving garment labels and patterns faithfully.</li>
+          <li>Use Imagen 4 Fast for high-volume onboarding (₹-efficient); use Imagen 4 Ultra for hero product shots and marketing assets.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text">Generally available. imagen-4.0-generate-001 and imagen-4.0-fast-generate-001 are now GA. <span class="highlight">$300 GCP free trial</span> covers development and early boutique onboarding. Fast variant is significantly cheaper per image.</div>
+        </div>
+      </div>
+
+      <!-- CARD: Gemini Live API -->
+      <div class="tool-card purple">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">🎙️</div>
+            <div class="card-name">Gemini Live API (ADK Streaming)</div>
+            <div class="card-category">Real-Time Voice + Multimodal AI</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge new">Now GA</span>
+            <span class="badge credit">$300 GCP Credit</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Gemini Live API enables low-latency, bidirectional voice (and video) conversations with Gemini 2.5 Flash Native Audio — the model processes raw audio natively in a single pipeline, eliminating the old STT→LLM→TTS sequential stack. It supports 70+ languages, natural barge-in interruption, acoustic cue understanding (tone, pace), and real-time tool calling. ADK Streaming wraps it cleanly so you can build voice agents without managing WebSocket infrastructure.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>Powers the <strong>voice search feature</strong> in your Stylist Agent — "Formal look for a board meeting tomorrow" spoken → agent searches across SKUs in real time.</li>
+          <li>Supports <strong>Hindi, Bengali, Tamil, Telugu, and 66+ other languages</strong> — huge advantage for Tier 2 Indian cities where English is not primary.</li>
+          <li>The <strong>ADK Live Toolkit demo</strong> even shows a product discovery demo: point camera at an object → find similar items + voice agent responds. Directly builds your "shop what you see" use case.</li>
+          <li>Can power a WhatsApp voice order flow — "Order me a large white kurta under ₹800" — without the user opening the app.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text">Gemini Live API is GA on Vertex AI (Dec 2025). <span class="warn-text">Paid service</span> billed per audio token on Vertex AI. Use <span class="highlight">$300 GCP credit</span> for development and early production testing. Gemini Free Tier (via AI Studio) gives limited free access for local prototyping.</div>
+        </div>
+      </div>
+
+      <!-- CARD: Multimodal Embeddings + Vector Search -->
+      <div class="tool-card green">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">🔍</div>
+            <div class="card-name">Vertex AI Multimodal Embeddings + Vector Search</div>
+            <div class="card-category">Semantic Search / Recommendations</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge credit">$300 GCP Credit</span>
+            <span class="badge core">Core</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Vertex AI Multimodal Embeddings convert text, images, and video into aligned vector representations in a shared semantic space. Vector Search (built on Google's ScaNN) indexes these vectors and runs approximate nearest-neighbor queries at massive scale with low latency. Together, they allow "search by image," "text-to-image search," and "find similar items" — the backbone of any modern recommendation system.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>Powers your <strong>"Complete the Look"</strong> feature — embed a selected blazer, query for style-coherent trousers, shoes, and accessories. The model understands outfit coherence, not just category cross-sells.</li>
+          <li>Enables <strong>visual search</strong> — user photographs a garment they own or see somewhere, uploads it, and finds similar items across all boutiques.</li>
+          <li>Drives the <strong>Stylist Agent's retrieval</strong> — NL query → text embedding → vector search → ranked product results aligned with occasion, colour, and body type context.</li>
+          <li>Personalization layer: embed user style history → find products in the same style cluster across new boutiques they haven't discovered yet.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text">Embeddings priced per 1,000 characters (text) or per image. Vector Search index hosting has monthly charges. <span class="highlight">$300 GCP credit covers initial index build and first months of operation.</span> Very cost-effective at boutique scale (thousands, not millions of SKUs).</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── TIER 2 TOOLS ── -->
+<section>
+  <div class="container">
+    <div class="section-label">Tier 2 — High Value Infrastructure</div>
+    <h2 class="section-title">Logistics, Data &amp; Deployment</h2>
+    <p class="section-desc">
+      These tools don't replace your agents — they give them the data, connectivity, and infrastructure to actually work in production. Each one solves a specific real-world problem QuickStyle will face.
+    </p>
+
+    <div class="tier-heading">
+      <div class="tier-pill t2">Tier 2 — Strong Recommendation</div>
+      <div class="tier-desc">Critical for production — routes, real-time data, deployment scaling, security.</div>
+    </div>
+
+    <div class="tools-grid">
+
+      <!-- CARD: Google Maps Routes API -->
+      <div class="tool-card purple">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">🗺️</div>
+            <div class="card-name">Google Maps Routes API</div>
+            <div class="card-category">Real-Time Navigation / ETA</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge free">5,000/mo Free (Pro SKU)</span>
+          </div>
+        </div>
+        <div class="card-what">
+          The Routes API (replacing legacy Directions API) computes optimized routes with live traffic awareness, including TRAFFIC_AWARE and TRAFFIC_AWARE_OPTIMAL modes. It returns turn-by-turn maneuvers, real-time ETAs, alternative route options, and hyperlocal "last-mile" data including building entrances, parking lots, and precise delivery addresses. Supports two-wheel vehicle routing (critical for India's delivery partner fleet).
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>The <strong>Delivery Route Agent</strong> calls Routes API to calculate the optimal path from boutique to customer, accounting for live Delhi/Mumbai traffic in real time.</li>
+          <li>The <strong>live map on the User Portal</strong> (delivery partner location + ETA countdown) is powered by Routes API waypoint data.</li>
+          <li><strong>Two-wheel routing</strong> (Enterprise SKU) is specifically relevant — your delivery partners on bikes and scooters need motorcycle-safe routing, not car routes.</li>
+          <li>TRAFFIC_AWARE_OPTIMAL mode enables dynamic re-routing mid-journey when accidents or traffic jams emerge — core to sustaining the 12-minute SLA consistently.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing (post-March 2025)</div>
+          <div class="p-text"><span class="highlight">5,000 free Pro SKU events/month</span>. Basic route compute: ~$0.005/request. Traffic-aware: slightly higher. Two-wheel routing is Enterprise-tier and billed separately. Maps SDK for Android/iOS: <span class="highlight">unlimited free</span>.</div>
+        </div>
+      </div>
+
+      <!-- CARD: Route Optimization API -->
+      <div class="tool-card purple">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">🚚</div>
+            <div class="card-name">Google Maps Route Optimization API</div>
+            <div class="card-category">Fleet Routing / Multi-Stop Optimization</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge paid">Paid (Per Shipment)</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Route Optimization (formerly Cloud Fleet Routing) solves the Vehicle Routing Problem — assigning multiple delivery tasks across multiple drivers while respecting time windows, vehicle capacities, driver availability, and other constraints. Unlike the basic Routes API (point-to-point), this handles fleet-wide optimization. Skroutz improved on-time delivery from 93% to 98.5% using this API.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>Once you have multiple concurrent orders from the same boutique zone, Route Optimization clusters and batches deliveries for the nearest available partner — reducing total km per delivery.</li>
+          <li>As QuickStyle scales to 50+ boutiques across 2 cities, fleet-wide optimization becomes economically critical — more deliveries per partner hour means lower per-delivery cost.</li>
+          <li>Can handle dynamic re-assignment when a partner cancels mid-delivery or is unexpectedly delayed.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text"><span class="warn-text">Paid per shipment</span>. Single-vehicle routing and fleet routing billed differently. Not needed at MVP stage (1–5 boutiques). Activate when you scale to multi-boutique multi-partner dispatch. Use $300 GCP credit to test.</div>
+        </div>
+      </div>
+
+      <!-- CARD: Firebase Realtime DB + Firestore -->
+      <div class="tool-card warn">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">🔥</div>
+            <div class="card-name">Firebase (Realtime DB + Firestore + Auth)</div>
+            <div class="card-category">Real-Time Data / Authentication</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge free">Generous Free Tier</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Firebase is a suite of backend services from Google. Firebase Realtime Database pushes JSON state changes to all connected clients instantly. Cloud Firestore is a scalable, queryable NoSQL document store. Firebase Authentication handles user login (Google, phone OTP, email). Firebase Cloud Messaging (FCM) sends push notifications. All have generous free tiers and integrate natively with Cloud Run and Vertex AI.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li><strong>Firebase Realtime DB</strong> powers the live order tracking on the User Portal — packing status → "Out for delivery" → ETA countdown. Changes pushed to the user's screen in milliseconds.</li>
+          <li><strong>Firestore</strong> stores the boutique inventory, order history, user profiles, and return reason analytics. The Boutique Portal's real-time stock levels are kept in sync across all users via Firestore listeners.</li>
+          <li><strong>Firebase Auth</strong> handles OTP-based phone login for customers (no email needed — critical for Indian market) and separate admin credentials for boutiques.</li>
+          <li><strong>FCM</strong> sends push notifications: "Your order is packed!", "Rider is 2 minutes away!", "Rate your experience" — the full post-delivery engagement loop.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing (Spark Free Plan)</div>
+          <div class="p-text"><span class="highlight">100 concurrent Realtime DB connections, 1GB storage, 50K reads/day on Firestore</span> — free forever. Firebase Auth: 10K SMS verifications/month free. FCM: <span class="highlight">completely free</span> with no limits. Upgrade to Blaze (pay-as-you-go) only at scale.</div>
+        </div>
+      </div>
+
+      <!-- CARD: Cloud Run -->
+      <div class="tool-card cyan">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">☁️</div>
+            <div class="card-name">Cloud Run</div>
+            <div class="card-category">Serverless Container Hosting</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge free">2M Requests/mo Free</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Cloud Run is Google Cloud's fully managed container execution service. You package your agent backend in a Docker container, deploy it with one command, and Cloud Run handles scaling from zero to thousands of instances automatically. No server management, no Kubernetes complexity. ADK agents deploy to Cloud Run natively with the Agent Starter Pack's one-command deployment.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>Hosts the backend API for all 5 ADK agents — each can be a separate Cloud Run service, independently scaling with demand.</li>
+          <li>The Boutique Onboarding Agent's image-processing pipeline (Gemini vision + Imagen 4) runs as a Cloud Run job — triggered when a boutique uploads a photo.</li>
+          <li><strong>Agent Starter Pack</strong> generates the Terraform + Cloud Build CI/CD pipeline for Cloud Run deployment automatically — your infrastructure-as-code is pre-written.</li>
+          <li>Scales to zero when idle (overnight, off-peak) — critical for keeping costs minimal at early-stage operations.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text"><span class="highlight">2 million requests/month free</span>, plus 360,000 GB-seconds compute and 180,000 vCPU-seconds free every month — the Always Free tier. For a seed-stage startup with 5 boutiques, Cloud Run costs are effectively <strong>₹0/month</strong>.</div>
+        </div>
+      </div>
+
+      <!-- CARD: Vertex AI Agent Engine -->
+      <div class="tool-card purple">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">⚙️</div>
+            <div class="card-name">Vertex AI Agent Engine (Runtime)</div>
+            <div class="card-category">Managed Agent Runtime</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge paid">Paid (vCPU Hours)</span>
+            <span class="badge credit">$300 GCP Credit</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Vertex AI Agent Engine (renamed from Reasoning Engine / LangChain on Vertex AI) is a fully managed runtime for deploying Python-based agents built with ADK, LangChain, LangGraph, LlamaIndex, or CrewAI. It provides enterprise-grade infrastructure: session state persistence, built-in Memory Bank, A2A (Agent-to-Agent) protocol support, bidirectional streaming, code execution sandbox, and IAM-governed access. Your agent code runs here without you managing compute.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>Deploy all 5 agents to Agent Engine as the managed runtime — no Docker, no Kubernetes, no server management.</li>
+          <li>The built-in <strong>Memory Bank</strong> is critical for NEGO BRAIN — it persists return history, quality score adjustments, and user pattern data across sessions.</li>
+          <li>A2A protocol allows the Stylist Agent to call the Recommendation Engine agent programmatically as a structured sub-task — clean inter-agent communication without custom glue code.</li>
+          <li>Agent Engine's <strong>code execution sandbox</strong> (Preview) lets NEGO BRAIN run Python to compute return rate statistics and quality score updates in-flight.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text">Charged per vCPU-hour and GiB-hour since March 2025. <span class="warn-text">Not free</span>, but costs are modest at small agent scale. Consider starting on <strong>Cloud Run</strong> (free tier) and migrating to Agent Engine once transaction volume justifies managed state persistence.</div>
+        </div>
+      </div>
+
+      <!-- CARD: Secret Manager -->
+      <div class="tool-card green">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">🔐</div>
+            <div class="card-name">Google Cloud Secret Manager</div>
+            <div class="card-category">Secrets / API Key Vault</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge free">Free (6 versions / 10K ops)</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Secret Manager is a fully managed secret vault that stores API keys, database passwords, and service credentials encrypted at rest, with IAM-governed access, full audit logging, and automatic rotation support. The free tier covers 6 active secret versions and 10,000 access operations per month — more than enough for a startup.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>Securely stores: Razorpay/Stripe payment gateway keys, Google Maps API keys, SMS OTP provider keys, Gemini API keys, Firebase service account credentials.</li>
+          <li>Your ADK agents running on Cloud Run or Agent Engine pull credentials from Secret Manager at runtime — no hardcoded keys in code or environment variables.</li>
+          <li>Audit logging tells you exactly which service read which key at what time — essential for compliance when handling payment data.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text"><span class="highlight">Permanently free</span> for 6 active secret versions and 10,000 access operations per month. For a startup with &lt;20 secrets queried infrequently, this is <strong>₹0 forever</strong>.</div>
+        </div>
+      </div>
+
+      <!-- CARD: Agent Starter Pack -->
+      <div class="tool-card cyan full">
+        <div class="full-inner">
+          <div>
+            <div class="card-header">
+              <div>
+                <div class="card-icon">🚀</div>
+                <div class="card-name">Google Agent Starter Pack</div>
+                <div class="card-category">Production Deployment Scaffolding</div>
+              </div>
+              <div class="card-badges">
+                <span class="badge free">Free (Open Source)</span>
+              </div>
+            </div>
+            <div class="card-what">
+              Agent Starter Pack is an official Google Cloud open-source project that generates a complete, production-ready AI agent project structure in 60 seconds. Run one command: <code style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;font-size:12px;">uvx agent-starter-pack create</code> and you get: a working ADK agent, Terraform infrastructure code, Cloud Build or GitHub Actions CI/CD pipeline, OpenTelemetry tracing, Vertex AI evaluation setup, and an interactive testing playground — all pre-wired. Supports ADK, LangGraph, and CrewAI frameworks.
+            </div>
+          </div>
+          <div>
+            <div class="card-contribution-label">How it powers Quick_Style</div>
+            <ul class="contrib-points">
+              <li>Eliminates weeks of boilerplate infrastructure setup. You get a fully functional ADK agent project with Cloud Run deployment, CI/CD, and observability in minutes — not months.</li>
+              <li>The <strong>agentic_rag template</strong> is a perfect starting point for the Boutique Data Store (RAG over boutique inventory PDFs, product descriptions, and size guides).</li>
+              <li>Built-in <strong>Vertex AI evaluation</strong> lets you systematically test Stylist Agent response quality and NEGO BRAIN mediation accuracy against test datasets.</li>
+              <li>The <strong>multi-agent template</strong> directly maps to QuickStyle's 5-agent architecture — each agent as a separate module with defined interfaces.</li>
+              <li>OpenTelemetry tracing gives you a full audit trail of every agent decision — critical for debugging when a delivery route calculates incorrectly or a return mediation misfires.</li>
+            </ul>
+            <div class="pricing-box">
+              <div class="p-label">Pricing</div>
+              <div class="p-text"><span class="highlight">Completely free</span> — open source. You only pay for the GCP infrastructure it provisions. The infrastructure cost is dominated by Cloud Run compute (free tier covers early stage) and Vertex AI model calls.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── TIER 3 TOOLS ── -->
+<section>
+  <div class="container">
+    <div class="section-label">Tier 3 — Valuable at Scale</div>
+    <h2 class="section-title">Data Grounding &amp; Enterprise AI</h2>
+    <p class="section-desc">
+      These tools become valuable as you move from MVP to growth. Consider adding them in Phase 2 once you have 50+ boutiques and consistent order volume.
+    </p>
+
+    <div class="tier-heading">
+      <div class="tier-pill t3">Tier 3 — Phase 2 Addition</div>
+      <div class="tier-desc">Add these after MVP validation. They enhance quality and scale, but aren't blockers.</div>
+    </div>
+
+    <div class="tools-grid">
+
+      <!-- Agent Builder Data Stores -->
+      <div class="tool-card warn">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">📚</div>
+            <div class="card-name">Agent Builder Data Stores (RAG Engine)</div>
+            <div class="card-category">Knowledge Grounding / RAG</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge credit">$300 GCP Credit</span>
+          </div>
+        </div>
+        <div class="card-what">
+          Agent Builder Data Stores index your structured and unstructured data (PDFs, websites, BigQuery tables, structured JSON) and make it queryable by agents through Retrieval-Augmented Generation (RAG). The RAG Engine is now GA on Vertex AI. You can index boutique catalogues, size guides, occasion-styling FAQs, and return policies as a searchable knowledge base that agents can cite from.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>Ground the <strong>Stylist Agent</strong> with real boutique inventory data — agent retrieves accurate product listings, not hallucinated ones.</li>
+          <li>Index size guides, fabric care instructions, and styling FAQs — the agent can answer "Is this fabric suitable for Indian summer?" accurately.</li>
+          <li><strong>NEGO BRAIN</strong> can retrieve a boutique's entire return history from a structured BigQuery table to make quality-score decisions with full context.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text">RAG Engine GA. Storage is priced per GB. Queries priced per 1,000. <span class="highlight">Use $300 GCP credit</span> to prototype. For small boutique catalogues at MVP scale, costs are minimal.</div>
+        </div>
+      </div>
+
+      <!-- Gen AI Evaluation Service -->
+      <div class="tool-card green">
+        <div class="card-header">
+          <div>
+            <div class="card-icon">📊</div>
+            <div class="card-name">Vertex AI Gen AI Evaluation Service</div>
+            <div class="card-category">Agent Quality Assurance</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge credit">$300 GCP Credit</span>
+          </div>
+        </div>
+        <div class="card-what">
+          The Gen AI Evaluation Service lets you systematically evaluate agents built with ADK, LangChain, LangGraph, or CrewAI against test datasets. It assesses both response quality and execution trajectories — did the agent take the right sequence of tool calls to reach the right answer? It natively integrates with Agent Engine and logs all results in Vertex AI Experiments for tracking over time.
+        </div>
+        <div class="card-contribution-label">How it powers Quick_Style</div>
+        <ul class="contrib-points">
+          <li>Test that the Stylist Agent correctly identifies a "formal board meeting look" vs a "casual weekend look" across 100 test queries before shipping.</li>
+          <li>Evaluate NEGO BRAIN mediation quality — does it correctly distinguish quality-failure returns from fit-error returns vs abuse patterns in test cases?</li>
+          <li>Track agent quality regressions when you update the underlying Gemini model version — automated regression testing for your AI.</li>
+        </ul>
+        <div class="pricing-box">
+          <div class="p-label">Pricing</div>
+          <div class="p-text">Priced per evaluation run. Evaluation itself uses model calls (Gemini). <span class="highlight">Use $300 GCP credit</span> for pre-launch testing. Add to CI/CD pipeline to prevent quality regressions at scale.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── INNOVATION PROPOSALS ── -->
+<section>
+  <div class="container">
+    <div class="section-label">Beyond the Pitch Deck</div>
+    <h2 class="section-title">5 Innovation Proposals</h2>
+    <p class="section-desc">
+      Features not in your current pitch that Google's stack uniquely enables — each one creates a defensible moat that no incumbent currently has.
+    </p>
+
+    <div class="innovation-grid">
+
+      <div class="innovation-card">
+        <div class="inv-num">01</div>
+        <div class="inv-title">Shop What You See — Live Camera Discovery</div>
+        <div class="inv-desc">
+          User opens the app, points camera at any outfit (on a friend, on a mannequin in a mall, on a TV screen) and QuickStyle's agent instantly identifies the garment type, finds the closest matching items across local boutiques, and displays them with "Available in 12 minutes" tags. Pure impulse-commerce. Zero friction. No search query needed.
+        </div>
+        <div class="inv-tools">
+          <span class="inv-tool-tag">Gemini Live API (Vision)</span>
+          <span class="inv-tool-tag">ADK Streaming</span>
+          <span class="inv-tool-tag">Vector Search</span>
+          <span class="inv-tool-tag">Multimodal Embeddings</span>
+        </div>
+      </div>
+
+      <div class="innovation-card">
+        <div class="inv-num">02</div>
+        <div class="inv-title">Voice-First Hindi/Regional Shopping Agent</div>
+        <div class="inv-desc">
+          Full shopping experience via voice in Hindi, Bengali, Tamil, or Marathi — no typing, no scrolling. "Mujhe kal ki meeting ke liye formal kurta chahiye, size L" → agent searches, presents 3 options audibly, confirms size and address, places the order. Reaches Tier 2/3 city shoppers who find English-first UIs alienating.
+        </div>
+        <div class="inv-tools">
+          <span class="inv-tool-tag">Gemini Live API (70+ langs)</span>
+          <span class="inv-tool-tag">ADK Gemini Live Toolkit</span>
+          <span class="inv-tool-tag">Firebase Auth (OTP)</span>
+        </div>
+      </div>
+
+      <div class="innovation-card">
+        <div class="inv-num">03</div>
+        <div class="inv-title">AI Body Fit Scanner (Beyond Try-On)</div>
+        <div class="inv-desc">
+          User takes a short video selfie (10 seconds). Gemini's vision model estimates approximate body measurements — shoulder width, torso length, hip ratio. These feed into size recommendation scores: "This size L from Boutique Rani will fit your shoulder width but the chest may be tight — size XL recommended." Attacks the 40% return rate from the fit-confidence angle, not just the visual one.
+        </div>
+        <div class="inv-tools">
+          <span class="inv-tool-tag">Gemini 2.5 Pro (Vision)</span>
+          <span class="inv-tool-tag">Vertex AI SDK</span>
+          <span class="inv-tool-tag">ADK Tool Call</span>
+        </div>
+      </div>
+
+      <div class="innovation-card">
+        <div class="inv-num">04</div>
+        <div class="inv-title">Trend Intelligence Agent for Boutiques</div>
+        <div class="inv-desc">
+          A background agent that monitors trending fashion content (Instagram Reels tags, Pinterest boards, local event calendars) using Gemini's grounding tool + web search, identifies upcoming demand signals (e.g., "ethnic prints spiking in Chennai ahead of Pongal"), and sends proactive WhatsApp alerts to boutiques: "Stock these 3 categories now — demand spike predicted in 7 days in your zone." This makes QuickStyle a business intelligence partner, not just a sales channel.
+        </div>
+        <div class="inv-tools">
+          <span class="inv-tool-tag">ADK (Background Agent)</span>
+          <span class="inv-tool-tag">Gemini Grounding + Web Search</span>
+          <span class="inv-tool-tag">Firebase Cloud Messaging</span>
+        </div>
+      </div>
+
+      <div class="innovation-card">
+        <div class="inv-num">05</div>
+        <div class="inv-title">Google UCP — Buy via Gemini Search</div>
+        <div class="inv-desc">
+          Google's Universal Commerce Protocol (UCP) — launched 2025 — is an open standard that lets merchants expose their inventory for direct purchase inside Google Search's AI Mode and the Gemini app. If QuickStyle integrates UCP, a user can ask Gemini "find me a white linen kurta near me" and buy from a QuickStyle boutique without opening the app. Radical distribution expansion with zero additional marketing spend.
+        </div>
+        <div class="inv-tools">
+          <span class="inv-tool-tag">Google UCP (Universal Commerce Protocol)</span>
+          <span class="inv-tool-tag">Google Merchant Center</span>
+          <span class="inv-tool-tag">Vertex AI Product Feed</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── NOT RECOMMENDED ── -->
+<section>
+  <div class="container">
+    <div class="section-label">Excluded Resources</div>
+    <h2 class="section-title">Tools That Don't Fit (and Why)</h2>
+    <p class="section-desc">
+      Not every tool in the Phase 1–5 resource list adds genuine value to QuickStyle. Here's an honest assessment of what to skip.
+    </p>
+
+    <div class="excluded-grid">
+      <div class="excluded-card">
+        <div class="ex-name">Arize (Observability Partner)</div>
+        <div class="ex-reason">Enterprise ML monitoring platform. Adds cost and complexity for a seed-stage startup. Cloud Trace + OpenTelemetry (built into Agent Starter Pack) covers your observability needs at no extra cost.</div>
+      </div>
+      <div class="excluded-card">
+        <div class="ex-name">Fivetran (Data Integration)</div>
+        <div class="ex-reason">A data pipeline tool for moving data between enterprise systems. QuickStyle doesn't yet have the multi-source data warehouse complexity that justifies Fivetran's cost. Use Cloud Functions + Firestore for data movement.</div>
+      </div>
+      <div class="excluded-card">
+        <div class="ex-name">Elastic (Search Partner)</div>
+        <div class="ex-reason">A third-party search engine with significant operational overhead. Vertex AI Vector Search + Agent Builder Data Stores provide equivalent and better-integrated semantic search within the GCP ecosystem — no separate Elastic cluster needed.</div>
+      </div>
+      <div class="excluded-card">
+        <div class="ex-name">Dynatrace (APM Partner)</div>
+        <div class="ex-reason">Enterprise application performance monitoring. Cloud Run's built-in metrics, Cloud Trace, and Cloud Logging provide sufficient observability for a startup. Revisit at 50K+ daily orders.</div>
+      </div>
+      <div class="excluded-card">
+        <div class="ex-name">GitLab (DevOps Partner)</div>
+        <div class="ex-reason">If you're already on GitHub, the Agent Starter Pack generates GitHub Actions CI/CD pipelines natively. No reason to migrate to GitLab CI/CD. If you use GitLab already — then relevant.</div>
+      </div>
+      <div class="excluded-card">
+        <div class="ex-name">Agent Builder Low-Code Path</div>
+        <div class="ex-reason">The managed, no-code Dialogflow CX-based builder is designed for simple Q&A chatbots. QuickStyle's agents require custom tool calling, multi-step reasoning, and inter-agent communication — all of which demand the code-first ADK approach, not the low-code builder.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── COST SUMMARY ── -->
+<section>
+  <div class="container">
+    <div class="section-label">Financial Summary</div>
+    <h2 class="section-title">Free Tier, Credits &amp; Actual Costs</h2>
+    <p class="section-desc">
+      What you're really paying (or not paying) at seed stage. Assumes MVP with 5 boutiques, ~500 orders/month.
+    </p>
+
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;">
+      <table class="cost-table">
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>Free / Paid</th>
+            <th>MVP-Stage Cost Estimate</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tool-col">Google ADK</td>
+            <td><span class="pill-free">Free Forever</span></td>
+            <td class="price-col">₹0</td>
+            <td class="note-col">Open source Apache 2.0. No licensing fees ever.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Agent Starter Pack</td>
+            <td><span class="pill-free">Free Forever</span></td>
+            <td class="price-col">₹0</td>
+            <td class="note-col">Open source Google Cloud project.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Gemini API (AI Studio)</td>
+            <td><span class="pill-free">Free Tier</span></td>
+            <td class="price-col">₹0 (dev) → small</td>
+            <td class="note-col">Free tier: 15 RPM, 1M tokens/day. Gemini 2.5 Flash free to start. Move to Vertex AI for production.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Vertex AI (all models)</td>
+            <td><span class="pill-credit">$300 GCP Credit</span></td>
+            <td class="price-col">$0 for ~90 days</td>
+            <td class="note-col">$300 free trial for new accounts. Covers Imagen, VTO, Embeddings, Live API. After credit: pay per token/image.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Virtual Try-On (Imagen)</td>
+            <td><span class="pill-credit">$300 GCP Credit</span></td>
+            <td class="price-col">Covered by credit</td>
+            <td class="note-col">~$0.0001–$0.002/image at scale. Very low cost per try-on.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Imagen 4 (product photos)</td>
+            <td><span class="pill-credit">$300 GCP Credit</span></td>
+            <td class="price-col">Covered by credit</td>
+            <td class="note-col">Fast variant is economical. Use for bulk boutique onboarding.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Cloud Run (agent hosting)</td>
+            <td><span class="pill-free">Free Tier</span></td>
+            <td class="price-col">₹0</td>
+            <td class="note-col">2M requests/month free. 500 orders/month = trivial usage.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Firebase (DB + Auth + FCM)</td>
+            <td><span class="pill-free">Free Tier (Spark)</span></td>
+            <td class="price-col">₹0</td>
+            <td class="note-col">Spark plan covers all MVP needs. FCM is always free.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Google Maps (Routes API)</td>
+            <td><span class="pill-free">5,000 free/mo</span></td>
+            <td class="price-col">₹0 → small</td>
+            <td class="note-col">5,000 free Pro SKU requests/month. 500 deliveries ≈ 500–1,000 route calls. Comfortably within free tier at MVP.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Secret Manager</td>
+            <td><span class="pill-free">Free Forever</span></td>
+            <td class="price-col">₹0</td>
+            <td class="note-col">6 active versions, 10K ops/month free — more than enough for a startup.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Vector Search + Embeddings</td>
+            <td><span class="pill-credit">$300 GCP Credit</span></td>
+            <td class="price-col">Covered by credit</td>
+            <td class="note-col">Index hosting starts at small monthly charge. Covered by trial credit at MVP.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Route Optimization API</td>
+            <td><span class="pill-paid">Paid per shipment</span></td>
+            <td class="price-col">Skip at MVP</td>
+            <td class="note-col">Not needed until multi-boutique fleet dispatch. Activate at 50+ boutiques.</td>
+          </tr>
+          <tr>
+            <td class="tool-col">Agent Engine (Runtime)</td>
+            <td><span class="pill-paid">Paid (vCPU-hours)</span></td>
+            <td class="price-col">Start with Cloud Run</td>
+            <td class="note-col">Use Cloud Run (free) at MVP. Migrate to Agent Engine for managed state + A2A at growth stage.</td>
+          </tr>
+          <tr>
+            <td class="tool-col" style="font-weight:700; color:var(--accent);">TOTAL (MVP Stage)</td>
+            <td><span class="pill-free">~Free</span></td>
+            <td class="price-col" style="font-weight:700; color:var(--accent);">~₹0 / month</td>
+            <td class="note-col">Using $300 GCP credit + always-free tiers covers essentially everything for the first 3–6 months.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 24px; padding: 20px; background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); border-radius: 12px;">
+      <div style="font-size: 12px; font-weight: 600; color: var(--accent4); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;">💡 Credit Strategy</div>
+      <div style="font-size: 13.5px; color: var(--muted); line-height: 1.7;">
+        New Google Cloud accounts receive <strong style="color:var(--accent4);">$300 in free credits valid for 90 days</strong>. Additionally, the Rapid-Agent Hackathon resource page references a form to request <strong style="color:var(--accent4);">$100 in additional credits</strong> (approved within 1–5 business days). For AI startups, GCP also offers up to <strong style="color:var(--accent4);">$200,000–$350,000 in startup program credits</strong> via the Google for Startups Cloud Program — highly worth applying to with your MVP and traction metrics.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── IMPLEMENTATION ROADMAP ── -->
+<section>
+  <div class="container">
+    <div class="section-label">Recommended Path</div>
+    <h2 class="section-title">Implementation Roadmap</h2>
+    <p class="section-desc">
+      A phased integration sequence ordered by impact and dependency. Each phase builds cleanly on the last.
+    </p>
+
+    <div class="roadmap-grid">
+      <div class="roadmap-phase">
+        <div class="ph-label">Phase 1 — Foundation</div>
+        <div class="ph-title">Agents + <span>Infrastructure</span></div>
+        <div class="ph-item"><div class="ph-dot c"></div>Set up GCP project, enable Vertex AI API, claim $300 free trial</div>
+        <div class="ph-item"><div class="ph-dot c"></div>Run <code style="font-size:11px;background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;">uvx agent-starter-pack create</code> — generates your ADK project with CI/CD</div>
+        <div class="ph-item"><div class="ph-dot c"></div>Build all 5 ADK agents locally using adk web for visual debugging</div>
+        <div class="ph-item"><div class="ph-dot c"></div>Integrate Firebase Auth + Firestore for user/boutique data layer</div>
+        <div class="ph-item"><div class="ph-dot c"></div>Store all secrets in Secret Manager from day one</div>
+      </div>
+      <div class="roadmap-phase">
+        <div class="ph-label">Phase 2 — AI Features</div>
+        <div class="ph-title">Vision + <span>Voice</span></div>
+        <div class="ph-item"><div class="ph-dot p"></div>Integrate Imagen 4 into Boutique Onboarding Agent pipeline</div>
+        <div class="ph-item"><div class="ph-dot p"></div>Add Vertex AI Virtual Try-On to user checkout flow</div>
+        <div class="ph-item"><div class="ph-dot p"></div>Build Multimodal Embeddings index for all boutique SKUs</div>
+        <div class="ph-item"><div class="ph-dot p"></div>Wire "Complete the Look" using Vector Search on style embeddings</div>
+        <div class="ph-item"><div class="ph-dot p"></div>Add Gemini Live API voice mode to Stylist Agent (Hindi + English)</div>
+      </div>
+      <div class="roadmap-phase">
+        <div class="ph-label">Phase 3 — Scale</div>
+        <div class="ph-title">Logistics + <span>Growth</span></div>
+        <div class="ph-item"><div class="ph-dot k"></div>Integrate Routes API for real-time delivery routing + live map</div>
+        <div class="ph-item"><div class="ph-dot k"></div>Add Firebase Realtime DB for live order packing + ETA tracking</div>
+        <div class="ph-item"><div class="ph-dot k"></div>Set up FCM for delivery notifications + post-order engagement</div>
+        <div class="ph-item"><div class="ph-dot k"></div>Deploy to Agent Engine for managed state + A2A inter-agent comms</div>
+        <div class="ph-item"><div class="ph-dot k"></div>Prototype "Shop What You See" camera agent + UCP integration</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div>
+    <strong>QuickStyle × Google Cloud Stack</strong> — Deep Research Report<br>
+    <span>Generated June 2026 · Based on publicly available Google Cloud, ADK, Vertex AI, and Firebase documentation</span>
+  </div>
+  <div style="text-align: right;">
+    <div style="color: var(--accent); font-size: 11px; font-weight: 600; letter-spacing: 0.1em;">QUICK_STYLE</div>
+    <div style="font-size: 11px; margin-top: 2px;">Fashion. Instant. Intelligent.</div>
+  </div>
+</footer>
+
+</body>
+</html>

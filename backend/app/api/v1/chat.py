@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -404,4 +404,55 @@ async def websocket_chat_endpoint(websocket: WebSocket, session_id: str):
     except WebSocketDisconnect:
         manager.disconnect(websocket, session_id)
 
+@router.post("/message/audio", response_model=ChatResponse)
+async def send_audio_message(
+    session_id: str = Form(...),
+    location: str = Form("NIT Jamshedpur Campus"),
+    user_id: Optional[str] = Form(None),
+    audio_file: UploadFile = File(...),
+    db=Depends(get_db)
+):
+    """
+    Process an audio chat message.
+    Uses Gemini 1.5 Flash natively to transcribe/understand Hindi or English audio.
+    """
+    import tempfile
+    
+    # Save the uploaded audio to a temporary file
+    temp_audio_path = ""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+        content = await audio_file.read()
+        temp_file.write(content)
+        temp_audio_path = temp_file.name
 
+    try:
+        # Upload the audio file to Gemini
+        gemini_audio = genai.upload_file(temp_audio_path)
+        
+        # Use Gemini 1.5 Flash to transcribe and extract the user's intent
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = "Listen to this audio. It may be in Hindi, English, or a mix. Transcribe exactly what the user is asking for in English text, preserving their exact shopping intent."
+        
+        response = await model.generate_content_async([prompt, gemini_audio])
+        transcribed_text = response.text.strip()
+        print(f"Transcribed Audio Intent: {transcribed_text}")
+        
+        # Delete file from Gemini storage
+        genai.delete_file(gemini_audio.name)
+        
+    except Exception as e:
+        print(f"Audio processing error: {e}")
+        transcribed_text = "I'm looking for some stylish clothes."
+    finally:
+        if os.path.exists(temp_audio_path):
+            os.remove(temp_audio_path)
+
+    # Re-use the existing send_message logic with the transcribed text
+    chat_message = ChatMessage(
+        session_id=session_id,
+        message=transcribed_text,
+        user_id=user_id,
+        location=location
+    )
+    
+    return await send_message(chat_message, db)

@@ -1,5 +1,18 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
+import google.generativeai as genai
 import json
+import typing_extensions as typing
+
+class IntentSchema(typing.TypedDict):
+    is_shopping: bool
+    conversational_reply: str | None
+    color: str | None
+    occasion: str | None
+    budget: float | None
+    size: str | None
+    search_keywords: str | None
+    wants_combination: bool
+    combination_target: str | None
+    multiple_designs: bool
 
 async def intent_detector_node(state: dict) -> dict:
     """
@@ -7,44 +20,25 @@ async def intent_detector_node(state: dict) -> dict:
     """
     query = state.get("raw_query", "")
     
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
+    model = genai.GenerativeModel("gemini-2.5-flash")
     
     prompt = f"""
     Analyze the user's query and determine if it is a shopping request (e.g., looking for clothes, shoes, styling) or just a conversational greeting/general chat.
-    Extract the following entities:
-    - is_shopping (boolean: true if looking for clothes/items or styling advice/combinations, false if greeting or off-topic)
-    - conversational_reply (string: if is_shopping is false, write a friendly AI stylist greeting or response. If true, set to null)
-    - color (string or null)
-    - occasion (string or null, e.g. formal, casual, party, gym, presentation)
-    - budget (number or null)
-    - size (string or null, e.g. S, M, L, XL)
-    - search_keywords (string or null: the target clothing item or category keywords to search for, e.g. "hoodie", "jacket", "blazer", "tee", "sweater", "sneakers", "pants", or null if not applicable)
-    - wants_combination (boolean: true if they want matching items, combinations, completing an outfit, pairing something, or coordinating products)
-    - combination_target (string or null: the product name or item type they want to find matches for)
-    - multiple_designs (boolean: true if they want to see all designs, multiple options, variety of styles, or different colors)
+    Extract the entities based on the requested JSON schema.
     
     Query: "{query}"
-    
-    Respond in JSON format ONLY:
-    {{
-      "is_shopping": true,
-      "conversational_reply": null,
-      "color": "...",
-      "occasion": "...",
-      "budget": 1000,
-      "size": "M",
-      "search_keywords": "hoodie",
-      "wants_combination": false,
-      "combination_target": null,
-      "multiple_designs": false
-    }}
     """
     
     try:
-        response = llm.invoke(prompt)
-        content = response.content.strip()
-        if content.startswith("```json"):
-            content = content[7:-3].strip()
+        response = await model.generate_content_async(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                response_mime_type="application/json",
+                response_schema=IntentSchema,
+                temperature=0.0,
+            ),
+        )
+        content = response.text.strip()
         entities = json.loads(content)
     except Exception as e:
         print(f"Error extracting entities: {e}")
@@ -61,4 +55,5 @@ async def intent_detector_node(state: dict) -> dict:
     })
     
     return {"extracted_entities": entities, "agent_log": [{"agent": "intent", "action": "extract"}]}
+
 

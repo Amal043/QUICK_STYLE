@@ -1,5 +1,4 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
-from app.agents.tools.elastic_tools import hybrid_search
+from app.agents.tools.vector_tools import hybrid_search
 from app.agents.tools.vision_tools import analyze_style_with_vision
 from app.websocket.agent_broadcaster import broadcast_agent_event
 import time, json

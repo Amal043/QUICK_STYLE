@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bot, Image as ImageIcon, Upload, Send, Sparkles, CheckCircle2, ArrowLeft, Loader2, Camera, User } from 'lucide-react';
+import { Bot, Image as ImageIcon, Upload, Send, Sparkles, CheckCircle2, ArrowLeft, Loader2, Camera, User, Mic } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
 export default function AdminAddProduct() {
@@ -22,9 +22,15 @@ export default function AdminAddProduct() {
     { role: 'agent', text: 'Hello! I am your AI Registry Assistant. Please upload a photo of the clothing you want to add, and I will generate stunning model images and register it for you.' }
   ]);
   const [chatInput, setChatInput] = useState('');
-  const [chatImageFile, setChatImageFile] = useState<File | null>(null);
-  const [chatImagePreview, setChatImagePreview] = useState<string | null>(null);
+  const [chatImageFiles, setChatImageFiles] = useState<File[]>([]);
+  const [chatImagePreviews, setChatImagePreviews] = useState<string[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // Voice Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
   // Manual Form State
   const [formData, setFormData] = useState({
@@ -34,12 +40,57 @@ export default function AdminAddProduct() {
   const [manualImagePreview, setManualImagePreview] = useState<string | null>(null);
 
   const handleChatImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setChatImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (ev) => setChatImagePreview(ev.target?.result as string);
-      reader.readAsDataURL(file);
+    if (e.target.files) {
+      const files = Array.from(e.target.files).slice(0, 3); // Max 3 images
+      setChatImageFiles(files);
+      
+      const previews: string[] = [];
+      files.forEach(file => {
+         const reader = new FileReader();
+         reader.onload = (ev) => {
+            previews.push(ev.target?.result as string);
+            if (previews.length === files.length) {
+               setChatImagePreviews([...previews]);
+            }
+         };
+         reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const handleMicClick = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          setAudioBlob(blob);
+          stream.getTracks().forEach(track => track.stop());
+          
+          // Auto-send if there's at least one image
+          if (chatImagePreviews.length > 0) {
+             // We can't auto-send easily here because state updates are async, 
+             // but we will let the user click send. Or we can just set it.
+          }
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error("Microphone error", err);
+        alert("Please allow microphone access");
+      }
     }
   };
 
@@ -54,15 +105,22 @@ export default function AdminAddProduct() {
   };
 
   const handleSendChatMessage = async () => {
-    if (!chatInput.trim() && !chatImageFile) return;
+    if (!chatInput.trim() && !audioBlob && chatImagePreviews.length === 0) return;
 
-    const newMessage: any = { role: 'user', text: chatInput };
-    if (chatImagePreview) newMessage.image = chatImagePreview;
+    const newMessage: any = { role: 'user', text: chatInput || (audioBlob ? '🎤 *Voice Recording*' : 'Uploaded Images') };
+    if (chatImagePreviews.length > 0) newMessage.image = chatImagePreviews[0]; // Just show first image in chat
     
     setChatMessages(prev => [...prev, newMessage]);
+    
+    // Capture current state for the request
+    const currentInput = chatInput;
+    const currentImages = chatImagePreviews;
+    const currentAudio = audioBlob;
+
     setChatInput('');
-    setChatImageFile(null);
-    setChatImagePreview(null);
+    setChatImageFiles([]);
+    setChatImagePreviews([]);
+    setAudioBlob(null);
     
     // Simulate AI thinking
     setIsSubmitting(true);
@@ -71,9 +129,12 @@ export default function AdminAddProduct() {
     try {
        // Make actual API call to backend agent
        const fd = new FormData();
-       fd.append('message', newMessage.text);
-       if (newMessage.image) {
-           fd.append('image_base64', newMessage.image);
+       fd.append('message', currentInput);
+       if (currentImages.length > 0) {
+           fd.append('images_base64', JSON.stringify(currentImages));
+       }
+       if (currentAudio) {
+           fd.append('audio_file', currentAudio, 'voice.webm');
        }
        
        const res = await fetch('/api/v1/agent/add-product', {
@@ -114,7 +175,7 @@ export default function AdminAddProduct() {
     try {
        const fd = new FormData();
        fd.append('message', `Register product: ${formData.name}, Price: ${formData.price}, Category: ${formData.category}, Brand: ${formData.brand}, Size: ${formData.size}. Description: ${formData.description}.`);
-       fd.append('image_base64', manualImagePreview);
+       fd.append('images_base64', JSON.stringify([manualImagePreview]));
        
        const res = await fetch('/api/v1/agent/add-product', {
            method: 'POST',
@@ -217,16 +278,29 @@ export default function AdminAddProduct() {
                     ))}
                     <div ref={chatEndRef} />
                  </div>
-                 
-                 <div className="p-4 bg-white border-t border-panelBorder">
-                    {chatImagePreview && (
-                       <div className="mb-3 relative inline-block">
-                          <img src={chatImagePreview} className="h-20 w-20 object-cover rounded-xl border-2 border-blue-500" />
-                          <button onClick={() => { setChatImageFile(null); setChatImagePreview(null); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs font-bold">✕</button>
+                                  <div className="p-4 bg-white border-t border-panelBorder">
+                    {chatImagePreviews.length > 0 && (
+                       <div className="mb-3 flex gap-2">
+                          {chatImagePreviews.map((preview, i) => (
+                             <div key={i} className="relative inline-block">
+                                <img src={preview} className="h-16 w-16 object-cover rounded-xl border-2 border-blue-500" />
+                                <button onClick={() => { 
+                                   const newPreviews = [...chatImagePreviews];
+                                   newPreviews.splice(i, 1);
+                                   setChatImagePreviews(newPreviews);
+                                }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-[10px] font-bold">✕</button>
+                             </div>
+                          ))}
+                       </div>
+                    )}
+                    {audioBlob && (
+                       <div className="mb-3 flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full w-max text-xs font-bold border border-blue-100">
+                          🎤 Voice Recording Ready
+                          <button onClick={() => setAudioBlob(null)} className="text-red-500 ml-2 hover:text-red-700">✕</button>
                        </div>
                     )}
                     <div className="flex items-center gap-2">
-                       <input type="file" accept="image/*" id="chat-img-upload" className="hidden" onChange={handleChatImageSelect} />
+                       <input type="file" multiple accept="image/*" id="chat-img-upload" className="hidden" onChange={handleChatImageSelect} />
                        <label htmlFor="chat-img-upload" className="p-3.5 bg-gray-100 hover:bg-gray-200 rounded-xl cursor-pointer transition-colors text-gray-600">
                           <Camera className="w-5 h-5" />
                        </label>
@@ -235,12 +309,19 @@ export default function AdminAddProduct() {
                           value={chatInput}
                           onChange={e => setChatInput(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleSendChatMessage()}
-                          placeholder="Type product details..."
+                          placeholder={isRecording ? "Recording..." : "Type product details or use mic..."}
                           className="flex-1 bg-gray-100 border-none rounded-xl p-3.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500/50"
+                          disabled={isRecording}
                        />
                        <button 
+                          onClick={handleMicClick}
+                          className={`p-3.5 rounded-xl transition-colors shadow-sm flex-shrink-0 ${isRecording ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+                       >
+                          <Mic className="w-5 h-5" />
+                       </button>
+                       <button 
                           onClick={handleSendChatMessage}
-                          disabled={isSubmitting || (!chatInput && !chatImagePreview)}
+                          disabled={isSubmitting || (!chatInput && !audioBlob && chatImagePreviews.length === 0)}
                           className="p-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl transition-colors shadow-md"
                        >
                           <Send className="w-5 h-5" />

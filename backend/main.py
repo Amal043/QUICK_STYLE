@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from app.db.connection import connect_to_mongo, close_mongo_connection
 from app.db.indexes import create_indexes
 from app.db.connection import get_db
-from app.api.v1 import products, tracking, chat, orders, auth, users, agent_product
+from app.api.v1 import products, tracking, chat, orders, auth, users, agent_product, vto
 from app.api.v1.chat import ws_router as chat_ws_router
 from app.config import settings
 import asyncio
@@ -110,8 +110,7 @@ app.include_router(chat.router,     prefix="/api/v1/chat",     tags=["AI Stylist
 app.include_router(chat_ws_router,  prefix="/ws/chat",         tags=["AI Stylist WS"])
 app.include_router(tracking.router, prefix="/ws",              tags=["Live Tracking"])
 app.include_router(agent_product.router, tags=["Agent"])
-
-
+app.include_router(vto.router,      prefix="/api/v1/vto",      tags=["Virtual Try-On"])
 
 @app.get("/api/health", tags=["Health"])
 async def health_check():
