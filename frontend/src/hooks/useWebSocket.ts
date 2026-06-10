@@ -18,10 +18,16 @@ export function useWebSocket(url: string | null, options: UseWebSocketOptions = 
     if (!url) return;
     
     setStatus('connecting');
-    // Ensure we resolve relative WS URLs correctly
-    const socketUrl = url.startsWith('ws') 
-      ? url 
-      : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${url}`;
+    // Ensure we resolve relative WS URLs correctly.
+    // Vercel does not support WebSocket proxying, so we must connect directly to Render in production.
+    let socketUrl = url;
+    if (!url.startsWith('ws')) {
+      if (window.location.hostname.includes('vercel.app')) {
+        socketUrl = `wss://quick-style-bckend.onrender.com${url}`;
+      } else {
+        socketUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${url}`;
+      }
+    }
       
     const ws = new WebSocket(socketUrl);
     wsRef.current = ws;
