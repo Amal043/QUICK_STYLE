@@ -1,4 +1,4 @@
-﻿"""
+"""
 QUICK_STYLE â€” FastAPI Backend Entry Point
 Hyperlocal Fashion Platform with AI Stylist & Real-time Delivery Tracking
 """
@@ -112,7 +112,7 @@ app.include_router(orders.router,   prefix="/api/v1/orders",   tags=["Orders"])
 app.include_router(chat.router,     prefix="/api/v1/chat",     tags=["AI Stylist"])
 app.include_router(chat_ws_router,  prefix="/ws/chat",         tags=["AI Stylist WS"])
 app.include_router(tracking.router, prefix="/ws",              tags=["Live Tracking"])
-app.include_router(agent_product.router, tags=["Agent"])
+app.include_router(agent_product.router, prefix="/api/v1", tags=["Agent"])
 app.include_router(vto.router,      prefix="/api/v1/vto",      tags=["Virtual Try-On"])
 
 @app.get("/api/health", tags=["Health"])

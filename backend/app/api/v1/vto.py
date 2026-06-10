@@ -241,6 +241,16 @@ async def image_proxy(url: str, fallback: str = None):
                     return FileResponse(fallback_path)
             return RedirectResponse(url=url)
 
+@router.get("/image/{filename}")
+async def get_tryon_image(filename: str):
+    """Serve the generated try-on images directly from backend."""
+    current_file_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(current_file_dir, "..", "..", "..", ".."))
+    file_path = os.path.join(project_root, "frontend", "public", "try-on", filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="Image not found")
+
 @router.post("/try-on", response_model=VTOResponse)
 async def virtual_try_on(body: VTORequest):
     """
@@ -358,44 +368,80 @@ async def virtual_try_on_upload(
     project_root = os.path.abspath(os.path.join(current_file_dir, "..", "..", "..", ".."))
     model_image_path = os.path.join(project_root, "frontend", "public", local_image.lstrip("/"))
     
-    # 2. Attempt Face Swap if user face is detected and model image exists
-    swapped_image_saved = False
+    # 2. Attempt IDM-VTON
     generated_image_url = None
+    try_on_dir = os.path.join(project_root, "frontend", "public", "try-on")
+    os.makedirs(try_on_dir, exist_ok=True)
     
-    if face_box and os.path.exists(model_image_path):
+    try:
+        import tempfile
+        import httpx
+        garment_image_path = None
+        print(f"garment_image_url received: {garment_image_url}")
+        
+        # Prepare the URL to fetch the garment image over the Docker network
+        if garment_image_url.startswith("http"):
+            fetch_url = garment_image_url.replace("localhost:5173", "frontend:5173").replace("localhost:80", "nginx").replace("localhost", "nginx")
+        else:
+            fetch_url = f"http://nginx{garment_image_url}" if garment_image_url.startswith("/") else f"http://nginx/{garment_image_url}"
+            
+        print(f"Fetching garment image from: {fetch_url}")
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(fetch_url)
+            if resp.status_code == 200:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_g:
+                    tmp_g.write(resp.content)
+                    garment_image_path = tmp_g.name
+                    print(f"Downloaded garment image to: {garment_image_path}")
+            else:
+                print(f"Failed to fetch garment image: HTTP {resp.status_code}")
+                
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_u:
+            tmp_u.write(user_image_bytes)
+            person_image_path = tmp_u.name
+            print(f"Saved user image to {person_image_path}")
+            
+        if garment_image_path:
+            vton_category = "Upper-body"
+            if "dress" in category.lower():
+                vton_category = "Dress"
+            elif "bottom" in category.lower() or "pant" in category.lower():
+                vton_category = "Lower-body"
+            
+            print(f"Starting IDM-VTON generation with category: {vton_category}")
+            vton_result_path = await generate_virtual_tryon(
+                person_image_path, garment_image_path, vton_category, try_on_dir
+            )
+            
+            if vton_result_path:
+                filename = os.path.basename(vton_result_path)
+                generated_image_url = f"/api/v1/vto/image/{filename}"
+                print(f"IDM-VTON completed: {generated_image_url}")
+    except Exception as vton_err:
+        print(f"IDM-VTON failed: {vton_err}")
+
+    # 3. Fallback to Face Swap if IDM-VTON failed
+    if not generated_image_url and face_box and os.path.exists(model_image_path):
         try:
             model_img = Image.open(model_image_path)
-            
-            # Find face coordinates for the model
             model_face_box = MODEL_FACES_DB.get(model_image_name)
             
-            # If the model face box was explicitly marked as None (e.g. boots, bag), we skip face swapping
-            # otherwise, if it's missing, we use the default template box
             if model_face_box is not None or model_image_name not in MODEL_FACES_DB:
                 if not model_face_box:
                     model_face_box = DEFAULT_MODEL_FACE_BOX
                 
-                # Perform the face swap
                 result_img = swap_face(pil_user_image, model_img, face_box, model_face_box)
-                
-                # Ensure output directory exists
-                try_on_dir = os.path.join(project_root, "frontend", "public", "try-on")
-                os.makedirs(try_on_dir, exist_ok=True)
-                
-                # Save swapped image
                 filename = f"tryon_{uuid.uuid4().hex[:12]}.png"
                 save_path = os.path.join(try_on_dir, filename)
                 result_img.save(save_path, "PNG")
                 
-                generated_image_url = f"/try-on/{filename}"
-                swapped_image_saved = True
+                generated_image_url = f"/api/v1/vto/image/{filename}"
                 print(f"Face swap completed successfully: {generated_image_url}")
         except Exception as swap_err:
-            print(f"Face swap workflow failed, falling back to Pollinations AI: {swap_err}")
+            print(f"Face swap workflow failed: {swap_err}")
 
-    # 3. Fallback to local model image if face swap didn't happen
-    if not swapped_image_saved:
-        # Use the curated local model image — reliable, instant, no external dependencies
+    # 4. Final Fallback to local model image
+    if not generated_image_url:
         generated_image_url = local_image
 
     return VTOResponse(

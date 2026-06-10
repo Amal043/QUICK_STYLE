@@ -24,6 +24,7 @@ export default function AdminAddProduct() {
   const [chatInput, setChatInput] = useState('');
   const [chatImageFiles, setChatImageFiles] = useState<File[]>([]);
   const [chatImagePreviews, setChatImagePreviews] = useState<string[]>([]);
+  const [accumulatedImages, setAccumulatedImages] = useState<string[]>([]); // To send all images to stateless backend
   const chatEndRef = useRef<HTMLDivElement>(null);
   
   // Voice Recording State
@@ -108,7 +109,7 @@ export default function AdminAddProduct() {
     if (!chatInput.trim() && !audioBlob && chatImagePreviews.length === 0) return;
 
     const newMessage: any = { role: 'user', text: chatInput || (audioBlob ? '🎤 *Voice Recording*' : 'Uploaded Images') };
-    if (chatImagePreviews.length > 0) newMessage.image = chatImagePreviews[0]; // Just show first image in chat
+    if (chatImagePreviews.length > 0) newMessage.user_images = [...chatImagePreviews];
     
     setChatMessages(prev => [...prev, newMessage]);
     
@@ -122,18 +123,26 @@ export default function AdminAddProduct() {
     setChatImagePreviews([]);
     setAudioBlob(null);
     
-    // Show AI thinking
-    setIsSubmitting(true);
-    setChatMessages(prev => [...prev, { role: 'system', text: '🔍 Gemini Vision is analyzing your image... then generating AI model photos (may take ~30s)...' }]);
-
-    try {
-       // Make actual API call to backend agent
-       const fd = new FormData();
-       fd.append('message', currentInput);
-       if (currentImages.length > 0) {
-           fd.append('images_base64', JSON.stringify(currentImages));
-       }
-       if (currentAudio) {
+     // Show AI thinking
+     setIsSubmitting(true);
+     setChatMessages(prev => [...prev, { role: 'system', text: '🔍 Gemini Vision is analyzing your image... then generating AI model photos (may take ~30s)...' }]);
+ 
+     // Combine previous accumulated images with any new ones
+     const allImagesForBackend = [...accumulatedImages, ...currentImages];
+     setAccumulatedImages(allImagesForBackend);
+ 
+     try {
+        // Make actual API call to backend agent
+        const fd = new FormData();
+        fd.append('message', currentInput);
+        if (allImagesForBackend.length > 0) {
+            fd.append('images_base64', JSON.stringify(allImagesForBackend));
+        }
+        
+        const historyToSend = chatMessages.filter(m => m.role !== 'system').map(m => ({role: m.role, text: m.text}));
+        fd.append('chat_history', JSON.stringify(historyToSend));
+        
+        if (currentAudio) {
            fd.append('audio_file', currentAudio, 'voice.webm');
        }
        
@@ -153,6 +162,7 @@ export default function AdminAddProduct() {
              images: genImages.length > 0 ? genImages : undefined
           }]);
           setSuccess(true);
+          setAccumulatedImages([]); // Clear accumulated on success
        } else {
           setChatMessages(prev => [...prev, {
              role: 'agent',
@@ -278,7 +288,13 @@ export default function AdminAddProduct() {
                                 </div>
                              ) : (
                                 <>
-                                   {msg.image && <img src={msg.image} className="w-full max-w-[200px] rounded-lg mb-3 object-cover" alt="Upload" />}
+                                   {msg.user_images && msg.user_images.length > 0 && (
+                                       <div className="flex gap-2 flex-wrap mb-3">
+                                          {msg.user_images.map((imgUrl: string, i: number) => (
+                                            <img key={i} src={imgUrl} className="h-24 w-24 object-cover rounded-lg border border-white/20" alt="Upload" />
+                                          ))}
+                                       </div>
+                                    )}
                                    <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                                    {msg.images && msg.images.length > 0 && (
                                      <div className="mt-3">

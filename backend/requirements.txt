@@ -26,3 +26,5 @@ twilio
 ffmpeg-python
 polyline
 google-generativeai
+groq
+gradio-client

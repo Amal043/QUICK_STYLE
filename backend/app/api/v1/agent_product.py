@@ -46,7 +46,7 @@ def _save_base64_image(b64_str: str, save_dir: str, filename: str) -> str:
     return f"/uploads/{filename}"
 
 
-async def _generate_model_image(name: str, description: str, category: str, gender: str, uid: str, idx: int) -> Optional[str]:
+async def _generate_model_image(name: str, description: str, category: str, gender: str, uid: str, idx: int, garment_image_path: str) -> Optional[str]:
     """
     Generate a fashion model photo wearing the garment.
     Primary: IDM-VTON (free, high-quality virtual try-on)
@@ -58,9 +58,34 @@ async def _generate_model_image(name: str, description: str, category: str, gend
     filename = f"{uid}_model{idx}.jpg"
     save_path = os.path.join(gen_dir, filename)
 
-    # Try IDM-VTON first (requires real garment and model images)
-    # For now, skip VTON and use Pollinations as proven fallback
-    # In production, upload reference model photos and use IDM-VTON
+    # Primary: IDM-VTON
+    try:
+        base_model_name = "base_female.jpg" if gender == "female" else "base_male.jpg"
+        base_model_path = os.path.join(project_root, "frontend", "public", "ai-models", base_model_name)
+        
+        if os.path.exists(base_model_path) and garment_image_path and os.path.exists(garment_image_path):
+            vton_category = "Upper-body"
+            cat_lower = category.lower()
+            name_lower = name.lower()
+            desc_lower = description.lower()
+            combined_text = f"{cat_lower} {name_lower} {desc_lower}"
+            
+            if any(w in combined_text for w in ["dress", "gown", "suit", "midi", "maxi"]):
+                vton_category = "Dress"
+            elif any(w in combined_text for w in ["pant", "trouser", "jeans", "bottom", "short", "skirt"]):
+                vton_category = "Lower-body"
+                
+            print(f"[Registry] Calling IDM-VTON with category: {vton_category}")
+            res_path = await generate_virtual_tryon(base_model_path, garment_image_path, vton_category, gen_dir)
+            if res_path and os.path.exists(res_path):
+                print(f"[Registry] Generated model image {idx} via IDM-VTON: {res_path}")
+                return f"/generated/{os.path.basename(res_path)}"
+            else:
+                print(f"[Registry] IDM-VTON returned nothing, falling back to Pollinations.")
+        else:
+            print(f"[Registry] Missing base model or garment image for IDM-VTON, falling back.")
+    except Exception as e:
+        print(f"[Registry] IDM-VTON error for {idx}, falling back: {e}")
 
     # Fallback: Pollinations AI
     if gender == "female":
@@ -104,6 +129,7 @@ async def _generate_model_image(name: str, description: str, category: str, gend
 @router.post("/agent/add-product")
 async def agent_add_product(
     message: str = Form(""),
+    chat_history: str = Form("[]"),
     images_base64: Optional[str] = Form(None),
     audio_file: Optional[UploadFile] = File(None)
 ):
@@ -117,21 +143,48 @@ async def agent_add_product(
     db = get_db()
     _configure_gemini()
 
-    if not images_base64:
-        return {
-            "status": "error",
-            "reply": "Please upload at least one photo of the clothing item to register it!"
-        }
-
     images_list = []
+    if images_base64:
+        try:
+            images_list = json.loads(images_base64)
+        except Exception:
+            images_list = [images_base64]
+            
+    history_list = []
     try:
-        images_list = json.loads(images_base64)
+        history_list = json.loads(chat_history)
     except Exception:
-        images_list = [images_base64]
+        pass
 
-    if not images_list:
-        return {"status": "error", "reply": "No valid images received. Please try again."}
+    # ── Conversational LLM Analysis ───────────────────────────────────────────
+    extracted = {}
+    
+    # Prepare image data for vision
+    image_data_list = []
+    for b64 in images_list:
+        raw_b64 = b64.split(",")[1] if "," in b64 else b64
+        img_bytes = base64.b64decode(raw_b64)
+        image_data_list.append({"mime_type": "image/jpeg", "data": img_bytes})
 
+    from app.utils.llm_provider import registry_agent_chat
+    
+    response_text = await registry_agent_chat(history_list, message, image_data_list)
+    
+    try:
+        parsed = json.loads(response_text)
+    except Exception:
+        parsed = {"action": "reply", "message": "I didn't quite catch that. Could you repeat?"}
+        
+    if parsed.get("action") == "reply":
+        return {
+            "status": "error", # Using 'error' status stops frontend from clearing UI and renders the text
+            "reply": parsed.get("message", "Can you provide more details?")
+        }
+        
+    # If action is register, proceed to save images and generate models
+    extracted = parsed
+    print(f"[Registry] Agent ready to register: {extracted.get('name')} | has_model={extracted.get('has_model')}")
+    
     # ── Save uploaded images to disk ──────────────────────────────────────────
     uid = uuid.uuid4().hex[:10]
     project_root = _get_project_root()
@@ -142,86 +195,7 @@ async def agent_add_product(
         local_url = _save_base64_image(b64, upload_dir, f"{uid}_raw{i}.jpg")
         uploaded_urls.append(local_url)
 
-    main_image_url = uploaded_urls[0]
-    main_image_b64 = images_list[0]
-
-    # ── Gemini Vision Analysis ────────────────────────────────────────────────
-    extracted = {
-        "name": "Stylish Apparel",
-        "price": 1999,
-        "category": "Streetwear",
-        "brand": "QUICK_STYLE",
-        "description": "A versatile clothing item crafted for comfort and style.",
-        "sizes": ["S", "M", "L", "XL"],
-        "color_name": "Default",
-        "color_hex": "#888888",
-        "return_policy": "Exchange",
-        "return_window_days": 5,
-        "gender": "unisex",
-        "has_model": False,
-    }
-
-    uploaded_audio_ref = None
-    temp_audio_path = None
-
-    try:
-        vision_prompt = f"""
-Analyze the provided clothing photo(s). The shopkeeper's description (if any): "{message}"
-
-Return ONLY a valid JSON object with these exact fields:
-- "name": Catchy, marketable product name (string)
-- "price": Estimated retail price in Indian Rupees as integer (e.g. 1499)
-- "category": One of: Streetwear, Formals, Activewear, Ethnic, Casual, Denim, Accessories, Footwear
-- "brand": Brand visible in image/tags, or "QUICK_STYLE" if not identifiable
-- "description": Premium 2-sentence description highlighting fabric, fit, and occasion
-- "sizes": Array of sizes — e.g. ["S","M","L","XL"] for clothing, ["6","7","8","9","10"] for footwear
-- "color_name": Primary color name (e.g. "Royal Blue")
-- "color_hex": Hex code for primary color (e.g. "#1A237E")
-- "return_policy": "Exchange" for regular items, "Refund" for premium/branded items
-- "return_window_days": Integer, typically 5 or 7
-- "gender": "male", "female", or "unisex"
-- "has_model": true if a real person is wearing the garment in the photo, false if it is a flat-lay, hanger shot, or product-only image
-
-Do NOT include any markdown or code blocks. Return raw JSON only.
-"""
-
-        # Prepare image for vision analysis
-        raw_b64 = main_image_b64.split(",")[1] if "," in main_image_b64 else main_image_b64
-        img_bytes = base64.b64decode(raw_b64)
-        image_data = {"mime_type": "image/jpeg", "data": img_bytes}
-
-        # Use unified LLM provider (Gemini vision, since Groq doesn't support vision)
-        text = vision_completion(image_data, vision_prompt, temperature=0.2)
-
-        if text.startswith("```"):
-            parts = text.split("```")
-            text = parts[1] if len(parts) > 1 else text
-            if text.startswith("json"):
-                text = text[4:].strip()
-
-        parsed = json.loads(text)
-        for k in ["name", "price", "category", "brand", "description", "gender",
-                   "return_policy", "return_window_days", "color_name", "color_hex", "has_model"]:
-            if k in parsed:
-                extracted[k] = parsed[k]
-        if "sizes" in parsed and isinstance(parsed["sizes"], list) and parsed["sizes"]:
-            extracted["sizes"] = parsed["sizes"]
-
-        print(f"[Registry] Gemini extracted: {extracted['name']} | has_model={extracted['has_model']} | gender={extracted['gender']}")
-
-    except Exception as e:
-        print(f"[Registry] Gemini Vision error: {e}")
-    finally:
-        if uploaded_audio_ref:
-            try:
-                genai.delete_file(uploaded_audio_ref.name)
-            except Exception:
-                pass
-        if temp_audio_path and os.path.exists(temp_audio_path):
-            try:
-                os.remove(temp_audio_path)
-            except Exception:
-                pass
+    main_image_url = uploaded_urls[0] if uploaded_urls else ""
 
     # ── Generate Model Photos if cloth-only image ─────────────────────────────
     name = str(extracted["name"])
@@ -238,9 +212,10 @@ Do NOT include any markdown or code blocks. Return raw JSON only.
         gender_1 = "female" if gender in ("female", "unisex") else "male"
         gender_2 = "male" if gender in ("male", "unisex") else "female"
 
+        garment_image_path = os.path.join(project_root, "frontend", "public", "uploads", f"{uid}_raw0.jpg")
         results = await asyncio.gather(
-            _generate_model_image(name, description, category, gender_1, uid, 1),
-            _generate_model_image(name, description, category, gender_2, uid, 2),
+            _generate_model_image(name, description, category, gender_1, uid, 1, garment_image_path),
+            _generate_model_image(name, description, category, gender_2, uid, 2, garment_image_path),
             return_exceptions=True
         )
         gen_img_1 = results[0] if isinstance(results[0], str) else None

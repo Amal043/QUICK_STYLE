@@ -16,15 +16,15 @@ except ImportError:
 
 
 # Global client (lazy-loaded)
-_vton_client: Optional[Client] = None
+_vton_client: Optional['Client'] = None
 
 
-def _get_vton_client() -> Optional[Client]:
+def _get_vton_client() -> Optional['Client']:
     """Lazy-load IDM-VTON client."""
     global _vton_client
     if _vton_client is None and HAS_GRADIO:
         try:
-            _vton_client = Client("yisol/IDM-VTON", hf_token=os.getenv("HF_API_KEY"))
+            _vton_client = Client("yisol/IDM-VTON", token=os.getenv("HF_API_KEY"))
             print("[IDM-VTON] Connected to yisol/IDM-VTON space")
         except Exception as e:
             print(f"[IDM-VTON] Connection failed: {e}. Virtual try-on disabled.")
@@ -93,8 +93,11 @@ async def generate_virtual_tryon(
             return None
 
         # Move to permanent location
-        final_path = os.path.join(output_dir, "tryon_result.png")
-        os.replace(generated_image_tmp, final_path)
+        import uuid
+        import shutil
+        filename = f"tryon_{uuid.uuid4().hex[:12]}.png"
+        final_path = os.path.join(output_dir, filename)
+        shutil.move(generated_image_tmp, final_path)
         print(f"[IDM-VTON] Success: {final_path}")
         return final_path
 
