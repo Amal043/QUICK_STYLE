@@ -50,7 +50,7 @@ export default function ExchangePortal() {
   const { data: products = [], isLoading } = useProducts(qs.toString());
 
   // ── Selection helpers ───────────────────────────────────────────────────────
-  const isSelected = (productId: string) => selectedItems.some(i => i.product.id === productId);
+  const isSelected = (productId: string | number) => selectedItems.some(i => i.product.id === productId);
 
   const toggleProduct = (product: Product) => {
     if (isSelected(product.id)) {
@@ -60,19 +60,19 @@ export default function ExchangePortal() {
     }
   };
 
-  const setSizeForItem = (productId: string, size: string) => {
+  const setSizeForItem = (productId: string | number, size: string) => {
     setSelectedItems(prev =>
       prev.map(i => i.product.id === productId ? { ...i, size, sizeOpen: false } : i)
     );
   };
 
-  const toggleSizePanel = (productId: string) => {
+  const toggleSizePanel = (productId: string | number) => {
     setSelectedItems(prev =>
       prev.map(i => i.product.id === productId ? { ...i, sizeOpen: !i.sizeOpen } : i)
     );
   };
 
-  const removeItem = (productId: string) => {
+  const removeItem = (productId: string | number) => {
     setSelectedItems(prev => prev.filter(i => i.product.id !== productId));
   };
 

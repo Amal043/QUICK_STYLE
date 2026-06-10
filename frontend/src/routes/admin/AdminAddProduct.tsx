@@ -18,7 +18,7 @@ export default function AdminAddProduct() {
   }, [adminMode]);
 
   // AI Chat State
-  const [chatMessages, setChatMessages] = useState<{role: 'system' | 'user' | 'agent', text: string, image?: string, images?: string[]}[]>([
+  const [chatMessages, setChatMessages] = useState<{role: 'system' | 'user' | 'agent', text: string, image?: string, images?: string[], user_images?: string[]}[]>([
     { role: 'agent', text: 'Hello! I am your AI Registry Assistant. Upload 1–3 photos of the clothing item and I will analyze it with Gemini Vision, generate professional model photos, and register it instantly.' }
   ]);
   const [chatInput, setChatInput] = useState('');
