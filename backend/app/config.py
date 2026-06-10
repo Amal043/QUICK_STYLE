@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     JWT_EXPIRY_HOURS: int = 24
 
     # CORS
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: Any = [
         "http://localhost:5173",
         "http://localhost:80",
         "http://localhost:3000",
