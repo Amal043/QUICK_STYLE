@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -X POST http://localhost:8000/api/v1/chat/message -H \"Content-Type: application/json\" -d \"{\\\\\"session_id\\\\\": \\\\\"test123\\\\\", \\\\\"message\\\\\": \\\\\"show me some hoodies\\\\\"}\")",
+      "Bash(echo \"---EXIT:$?---\")",
+      "Bash(curl -sv -X POST http://localhost:8000/api/v1/chat/message -H \"Content-Type: application/json\" -d \"{\\\\\"session_id\\\\\": \\\\\"test123\\\\\", \\\\\"message\\\\\": \\\\\"show me some hoodies\\\\\"}\")",
+      "Bash(python -c ' *)",
+      "Bash(pip show *)"
+    ]
+  }
+}

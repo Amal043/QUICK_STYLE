@@ -11,6 +11,8 @@ from fastapi.responses import RedirectResponse, FileResponse
 from pydantic import BaseModel
 import google.generativeai as genai
 from PIL import Image, ImageDraw, ImageFilter
+from app.utils.idm_vton import generate_virtual_tryon, check_vton_availability
+from app.utils.llm_provider import vision_completion
 
 router = APIRouter()
 
@@ -288,14 +290,10 @@ async def virtual_try_on_upload(
     pil_user_image = Image.open(io.BytesIO(user_image_bytes))
     
     try:
-        # Setup Gemini
-        if os.getenv("GOOGLE_API_KEY"):
-            genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-        
         prompt = f"""
         You are the QUICK_STYLE Virtual Try-On Assistant.
         Analyze this person's picture. They want to try on this garment: "{garment_name}".
-        
+
         Provide the following outputs in a single JSON object:
         1. "advice": Write a detailed, sophisticated 3-sentence styling advice telling the person how the "{garment_name}" (category: {category}) will look on them based on their image features, with color/fit recommendations.
         2. "person_description": A brief description of the person's physical appearance (e.g. "a young South Asian woman with long brown hair, warm skin tone" or "a young man with short dark hair, glasses") to be used for generating a fallback fashion model image. Keep it simple and focused on features.
@@ -305,7 +303,7 @@ async def virtual_try_on_upload(
            - "ymax": bottom coordinate (0 to 1000)
            - "xmax": right coordinate (0 to 1000)
            If no human face is detected in the image, return null.
-        
+
         Respond with JSON format:
         {{
             "advice": "...",
@@ -318,22 +316,26 @@ async def virtual_try_on_upload(
             }}
         }}
         """
-        
-        model = genai.GenerativeModel('gemini-2.5-flash-lite')
-        response = model.generate_content(
-            [pil_user_image, prompt],
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.7,
-                response_mime_type="application/json"
-            )
-        )
-        
-        res_data = json.loads(response.text.strip())
+
+        # Use unified LLM provider for vision
+        import base64
+        raw_b64 = base64.b64encode(user_image_bytes).decode()
+        image_data = {"mime_type": "image/jpeg", "data": base64.b64decode(raw_b64)}
+
+        res_text = vision_completion(image_data, prompt, temperature=0.7)
+
+        if res_text.startswith("```"):
+            parts = res_text.split("```")
+            res_text = parts[1] if len(parts) > 1 else res_text
+            if res_text.startswith("json"):
+                res_text = res_text[4:].strip()
+
+        res_data = json.loads(res_text)
         advice = res_data.get("advice")
         person_description = res_data.get("person_description")
         face_box = res_data.get("face_box")
     except Exception as e:
-        print(f"Gemini Analysis & Face Detection Error: {e}")
+        print(f"Vision Analysis & Face Detection Error: {e}")
         
     # Fallback styling advice and description if Gemini failed
     if not advice:

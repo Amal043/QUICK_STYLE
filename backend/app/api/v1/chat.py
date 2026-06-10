@@ -295,17 +295,18 @@ async def send_audio_message(
         temp_audio_path = temp_file.name
 
     try:
-        # Upload the audio file to Gemini
+        # Audio transcription: Groq doesn't support audio yet, so we use Gemini
+        genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
         gemini_audio = genai.upload_file(temp_audio_path)
-        
-        # Use Gemini 1.5 Flash to transcribe and extract the user's intent
+
+        # Use Gemini for audio transcription + intent extraction
         model = FallbackGenerativeModel('gemini-2.5-flash-lite')
         prompt = "Listen to this audio. It may be in Hindi, English, or a mix. Transcribe exactly what the user is asking for in English text, preserving their exact shopping intent."
-        
+
         response = await model.generate_content_async([prompt, gemini_audio])
         transcribed_text = response.text.strip()
-        print(f"Transcribed Audio Intent: {transcribed_text}")
-        
+        print(f"[Chat] Transcribed Audio Intent: {transcribed_text}")
+
         # Delete file from Gemini storage
         genai.delete_file(gemini_audio.name)
         
