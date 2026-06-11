@@ -83,7 +83,7 @@ export default function ExchangePortal() {
     setConfirming(true);
     const trackingCreatedAt = Date.now();
     updateOrderStatus(orderId, 'Exchanging', trackingCreatedAt);
-    window.location.href = `/order-details/${orderId}?createdAt=${trackingCreatedAt}&mode=Exchange`;
+    navigate(`/order-details/${orderId}?createdAt=${trackingCreatedAt}&mode=Exchange`);
   };
 
   const panelHeight = selectedItems.length > 0;

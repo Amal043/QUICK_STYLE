@@ -8,6 +8,10 @@
     {
       "source": "/ws/:path*",
       "destination": "https://quick-style-bckend.onrender.com/ws/:path*"
+    },
+    {
+      "source": "/((?!api|ws|assets|stitch|ai-models|try-on|favicon.ico).*)",
+      "destination": "/index.html"
     }
   ]
 }

@@ -497,7 +497,7 @@ export default function Account() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <div className="border border-panelBorder rounded-2xl p-6 bg-[#FAF8F5]/30 hover:border-[#5C1324]/50 transition-colors cursor-pointer group" onClick={() => window.location.href = '/admin/add-product'}>
+               <div className="border border-panelBorder rounded-2xl p-6 bg-[#FAF8F5]/30 hover:border-[#5C1324]/50 transition-colors cursor-pointer group" onClick={() => navigate('/admin/add-product')}>
                   <div className="w-12 h-12 bg-[#5C1324]/10 text-[#5C1324] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                      <Plus className="w-6 h-6" />
                   </div>
@@ -505,7 +505,7 @@ export default function Account() {
                   <p className="text-sm text-gray-500">Register new inventory manually or use the AI Assistant for auto-generation.</p>
                </div>
                
-               <div className="border border-panelBorder rounded-2xl p-6 bg-[#FAF8F5]/30 hover:border-[#5C1324]/50 transition-colors cursor-pointer group" onClick={() => window.location.href = '/admin/logs'}>
+               <div className="border border-panelBorder rounded-2xl p-6 bg-[#FAF8F5]/30 hover:border-[#5C1324]/50 transition-colors cursor-pointer group" onClick={() => navigate('/admin/logs')}>
                   <div className="w-12 h-12 bg-[#C5A880]/10 text-[#C5A880] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                      <Edit2 className="w-6 h-6" />
                   </div>
