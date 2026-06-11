@@ -120,7 +120,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "QUICK_STYLE API",
-        "version": "1.0.0",
+        "version": "1.0.1-test-deploy-1",
         "env": settings.ENV,
         "database": "MongoDB Atlas",
     }
