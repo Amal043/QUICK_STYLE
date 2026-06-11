@@ -43,7 +43,7 @@ def _save_base64_image(b64_str: str, save_dir: str, filename: str) -> str:
     except Exception:
         with open(save_path, "wb") as f:
             f.write(img_bytes)
-    return f"/uploads/{filename}"
+    return f"/api/v1/agent/images/{filename}"
 
 
 async def _generate_model_image(name: str, description: str, category: str, gender: str, uid: str, idx: int, garment_image_path: str) -> Optional[str]:
@@ -52,8 +52,8 @@ async def _generate_model_image(name: str, description: str, category: str, gend
     Primary: IDM-VTON (free, high-quality virtual try-on)
     Fallback: Pollinations AI text-to-image
     """
-    project_root = _get_project_root()
-    gen_dir = os.path.join(project_root, "frontend", "public", "generated")
+    api_dir = os.path.dirname(os.path.abspath(__file__))
+    gen_dir = os.path.join(api_dir, "agent_images")
     os.makedirs(gen_dir, exist_ok=True)
     filename = f"{uid}_model{idx}.jpg"
     save_path = os.path.join(gen_dir, filename)
@@ -63,7 +63,7 @@ async def _generate_model_image(name: str, description: str, category: str, gend
         base_model_name = "base_female.jpg" if gender == "female" else "base_male.jpg"
         
         # Try local assets directory first (production/docker package)
-        api_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = _get_project_root()
         base_model_path = os.path.abspath(os.path.join(api_dir, "..", "..", "assets", "ai-models", base_model_name))
         
         # Fallback to frontend public folder (local dev compose setup)
@@ -86,7 +86,7 @@ async def _generate_model_image(name: str, description: str, category: str, gend
             res_path = await generate_virtual_tryon(base_model_path, garment_image_path, vton_category, gen_dir)
             if res_path and os.path.exists(res_path):
                 print(f"[Registry] Generated model image {idx} via IDM-VTON: {res_path}")
-                return f"/generated/{os.path.basename(res_path)}"
+                return f"/api/v1/agent/images/{os.path.basename(res_path)}"
             else:
                 print(f"[Registry] IDM-VTON returned nothing, falling back to Pollinations.")
         else:
@@ -124,8 +124,8 @@ async def _generate_model_image(name: str, description: str, category: str, gend
             if resp.status_code == 200 and "image" in resp.headers.get("content-type", ""):
                 with open(save_path, "wb") as f:
                     f.write(resp.content)
-                print(f"[Registry] Generated model image {idx} via Pollinations: /generated/{filename}")
-                return f"/generated/{filename}"
+                print(f"[Registry] Generated model image {idx} via Pollinations: /api/v1/agent/images/{filename}")
+                return f"/api/v1/agent/images/{filename}"
             else:
                 print(f"[Registry] Pollinations returned {resp.status_code} for image {idx}")
     except Exception as e:
@@ -194,8 +194,8 @@ async def agent_add_product(
     
     # ── Save uploaded images to disk ──────────────────────────────────────────
     uid = uuid.uuid4().hex[:10]
-    project_root = _get_project_root()
-    upload_dir = os.path.join(project_root, "frontend", "public", "uploads")
+    api_dir = os.path.dirname(os.path.abspath(__file__))
+    upload_dir = os.path.join(api_dir, "agent_images")
 
     uploaded_urls = []
     for i, b64 in enumerate(images_list[:3]):
@@ -316,3 +316,16 @@ async def agent_add_product(
         "reply": reply,
         "generated_images": [x for x in [gen_img_1, gen_img_2] if x]
     }
+
+
+from fastapi.responses import FileResponse
+
+@router.get("/agent/images/{filename}")
+async def get_agent_image(filename: str):
+    """Serve images generated or uploaded by the agent."""
+    api_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(api_dir, "agent_images", filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    from fastapi import HTTPException
+    raise HTTPException(status_code=404, detail="Image not found")

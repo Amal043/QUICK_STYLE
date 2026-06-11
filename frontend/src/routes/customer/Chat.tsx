@@ -9,6 +9,11 @@ import NegotiationCard from '../../components/chat/NegotiationCard';
 
 const botWelcome = "👋 Welcome to QUICK_STYLE Concierge. I am your personal AI stylist. Need a swift wardrobe change for an unexpected event, spilled coffee, or a night out? Describe your fit requirements below.";
 
+import hoodieImg from '../../assets/lavender_hoodie.png';
+import jacketImg from '../../assets/techwear_jacket.png';
+import sweaterImg from '../../assets/knit_sweater.png';
+import shirtImg from '../../assets/activewear_shirt.png';
+
 export default function Chat() {
   const navigate = useNavigate();
   const {
@@ -97,11 +102,11 @@ export default function Chat() {
 
   const mapImage = (name: string): string => {
     const n = name.toLowerCase();
-    if (n.includes("hoodie")) return "/src/assets/lavender_hoodie.png";
-    if (n.includes("jacket") || n.includes("blazer") || n.includes("tote") || n.includes("bag")) return "/src/assets/techwear_jacket.png";
-    if (n.includes("sweater") || n.includes("pants") || n.includes("joggers") || n.includes("trousers") || n.includes("shoes") || n.includes("sneakers") || n.includes("loafers") || n.includes("boots")) return "/src/assets/knit_sweater.png";
-    if (n.includes("tee") || n.includes("shirt") || n.includes("shorts")) return "/src/assets/activewear_shirt.png";
-    return "/src/assets/lavender_hoodie.png";
+    if (n.includes("hoodie")) return hoodieImg;
+    if (n.includes("jacket") || n.includes("blazer") || n.includes("tote") || n.includes("bag")) return jacketImg;
+    if (n.includes("sweater") || n.includes("pants") || n.includes("joggers") || n.includes("trousers") || n.includes("shoes") || n.includes("sneakers") || n.includes("loafers") || n.includes("boots")) return sweaterImg;
+    if (n.includes("tee") || n.includes("shirt") || n.includes("shorts")) return shirtImg;
+    return hoodieImg;
   };
 
   const handleSelectAndAddToCart = (recProduct: any, size: Size) => {
