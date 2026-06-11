@@ -41,13 +41,19 @@ export default function OrderDetails() {
       return;
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = window.location.host;
     const createdAtParam = urlCreatedAt ? parseInt(urlCreatedAt) : (order.createdAt ?? Date.now() - 60000);
     const primaryItem = order.items?.[0];
     const storeLat = primaryItem?.store_location?.coordinates?.[1] ?? 22.5015;
     const storeLng = primaryItem?.store_location?.coordinates?.[0] ?? 88.3616;
-    const wsUrl = `${protocol}//${wsHost}/ws/tracking/${orderId}?createdAt=${createdAtParam}&storeLat=${storeLat}&storeLng=${storeLng}&mode=${mode}`;
+    
+    let wsUrl = '';
+    const wsPath = `/ws/tracking/${orderId}?createdAt=${createdAtParam}&storeLat=${storeLat}&storeLng=${storeLng}&mode=${mode}`;
+    if (window.location.hostname.includes('vercel.app')) {
+      wsUrl = `wss://quick-style-bckend.onrender.com${wsPath}`;
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//${window.location.host}${wsPath}`;
+    }
 
     const ws = new WebSocket(wsUrl);
 

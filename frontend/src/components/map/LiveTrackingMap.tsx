@@ -27,8 +27,15 @@ export default function LiveTrackingMap({ orderId }: LiveTrackingMapProps) {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws.current = new WebSocket(`${wsProtocol}//${window.location.host}/ws/tracking/${orderId}`);
+    let wsUrl = '';
+    const wsPath = `/ws/tracking/${orderId}`;
+    if (window.location.hostname.includes('vercel.app')) {
+      wsUrl = `wss://quick-style-bckend.onrender.com${wsPath}`;
+    } else {
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${wsProtocol}//${window.location.host}${wsPath}`;
+    }
+    ws.current = new WebSocket(wsUrl);
     
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
