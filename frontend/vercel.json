@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://quick-style-bckend.onrender.com/api/:path*"
+      "destination": "https://quick-style.onrender.com/api/:path*"
     },
     {
       "source": "/ws/:path*",
-      "destination": "https://quick-style-bckend.onrender.com/ws/:path*"
+      "destination": "https://quick-style.onrender.com/ws/:path*"
     },
     {
       "source": "/((?!api|ws|assets|stitch|ai-models|try-on|favicon.ico).*)",
