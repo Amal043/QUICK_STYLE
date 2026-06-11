@@ -422,7 +422,13 @@ async def virtual_try_on_upload(
     
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(current_file_dir, "..", "..", "..", ".."))
-    model_image_path = os.path.join(project_root, "frontend", "public", local_image.lstrip("/"))
+    
+    # Try local assets directory first (production/docker package)
+    model_image_path = os.path.abspath(os.path.join(current_file_dir, "..", "..", "assets", "ai-models", model_image_name))
+    
+    # Fallback to frontend public folder (local dev compose setup)
+    if not os.path.exists(model_image_path):
+        model_image_path = os.path.join(project_root, "frontend", "public", local_image.lstrip("/"))
     
     # 2. Attempt IDM-VTON
     generated_image_url = None

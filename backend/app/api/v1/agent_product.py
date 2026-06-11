@@ -61,7 +61,14 @@ async def _generate_model_image(name: str, description: str, category: str, gend
     # Primary: IDM-VTON
     try:
         base_model_name = "base_female.jpg" if gender == "female" else "base_male.jpg"
-        base_model_path = os.path.join(project_root, "frontend", "public", "ai-models", base_model_name)
+        
+        # Try local assets directory first (production/docker package)
+        api_dir = os.path.dirname(os.path.abspath(__file__))
+        base_model_path = os.path.abspath(os.path.join(api_dir, "..", "..", "assets", "ai-models", base_model_name))
+        
+        # Fallback to frontend public folder (local dev compose setup)
+        if not os.path.exists(base_model_path):
+            base_model_path = os.path.join(project_root, "frontend", "public", "ai-models", base_model_name)
         
         if os.path.exists(base_model_path) and garment_image_path and os.path.exists(garment_image_path):
             vton_category = "Upper-body"
