@@ -6,7 +6,7 @@ import json
 import httpx
 import uuid
 import numpy as np
-from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Response
+from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Response, Request
 from fastapi.responses import RedirectResponse, FileResponse
 from pydantic import BaseModel
 import google.generativeai as genai
@@ -278,8 +278,64 @@ async def virtual_try_on(body: VTORequest):
         styling_advice=advice
     )
 
+def resolve_garment_url(garment_url: str, request: Request = None) -> str:
+    """
+    Resolves the garment image URL to an absolute URL that the backend can fetch.
+    If the garment_url is a relative path, prepends the frontend's origin.
+    """
+    # 1. If it's already an absolute URL
+    if garment_url.startswith("http://") or garment_url.startswith("https://"):
+        # If running locally in docker-compose, replace localhost to allow container communication
+        if "localhost" in garment_url or "127.0.0.1" in garment_url:
+            return garment_url.replace("localhost:5173", "frontend:5173").replace("localhost:80", "nginx").replace("localhost", "nginx")
+        return garment_url
+
+    # 2. Extract origin from request headers (Origin or Referer)
+    origin = None
+    if request:
+        origin = request.headers.get("origin")
+        if not origin:
+            referer = request.headers.get("referer")
+            if referer:
+                try:
+                    from urllib.parse import urlparse
+                    parsed = urlparse(referer)
+                    origin = f"{parsed.scheme}://{parsed.netloc}"
+                except Exception:
+                    pass
+
+    # 3. Fallback to settings.CORS_ORIGINS for a non-local HTTPS origin
+    if not origin:
+        try:
+            from app.config import settings
+            # Look for any production origin in CORS_ORIGINS
+            for allowed in settings.CORS_ORIGINS:
+                if isinstance(allowed, str) and (allowed.startswith("https://") or (allowed.startswith("http://") and "localhost" not in allowed and "127.0.0.1" not in allowed)):
+                    origin = allowed
+                    break
+        except Exception:
+            pass
+
+    # 4. Fallback to FRONTEND_URL env var
+    if not origin:
+        origin = os.getenv("FRONTEND_URL")
+
+    # 5. Construct the absolute URL if we resolved an origin
+    if origin:
+        # If origin is local, map it to internal docker network
+        if "localhost" in origin or "127.0.0.1" in origin:
+            origin = origin.replace("localhost:5173", "frontend:5173").replace("localhost:80", "nginx").replace("localhost", "nginx")
+        path = garment_url if garment_url.startswith("/") else f"/{garment_url}"
+        return f"{origin.rstrip('/')}{path}"
+
+    # 6. Last resort fallback to local docker host 'nginx'
+    path = garment_url if garment_url.startswith("/") else f"/{garment_url}"
+    return f"http://nginx{path}"
+
+
 @router.post("/try-on-upload", response_model=VTOResponse)
 async def virtual_try_on_upload(
+    request: Request,
     user_image: UploadFile = File(...),
     garment_image_url: str = Form(...),
     garment_name: str = Form(...),
@@ -379,11 +435,8 @@ async def virtual_try_on_upload(
         garment_image_path = None
         print(f"garment_image_url received: {garment_image_url}")
         
-        # Prepare the URL to fetch the garment image over the Docker network
-        if garment_image_url.startswith("http"):
-            fetch_url = garment_image_url.replace("localhost:5173", "frontend:5173").replace("localhost:80", "nginx").replace("localhost", "nginx")
-        else:
-            fetch_url = f"http://nginx{garment_image_url}" if garment_image_url.startswith("/") else f"http://nginx/{garment_image_url}"
+        # Prepare the URL to fetch the garment image dynamically
+        fetch_url = resolve_garment_url(garment_image_url, request)
             
         print(f"Fetching garment image from: {fetch_url}")
         async with httpx.AsyncClient() as client:
