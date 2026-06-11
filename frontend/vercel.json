@@ -10,15 +10,7 @@
       "destination": "https://quick-style-bckend.onrender.com/ws/:path*"
     },
     {
-      "source": "/uploads/:path*",
-      "destination": "https://quick-style-bckend.onrender.com/uploads/:path*"
-    },
-    {
-      "source": "/generated/:path*",
-      "destination": "https://quick-style-bckend.onrender.com/generated/:path*"
-    },
-    {
-      "source": "/((?!api|ws|assets|stitch|ai-models|try-on|uploads|generated|favicon.ico).*)",
+      "source": "/((?!api|ws|assets|stitch|ai-models|try-on|favicon.ico).*)",
       "destination": "/index.html"
     }
   ]
