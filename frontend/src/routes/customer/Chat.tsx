@@ -6,6 +6,10 @@ import type { Message, Size } from '../../types';
 import { useAgentLog } from '../../hooks/useAgentLog';
 import AgentStatusBar from '../../components/chat/AgentStatusBar';
 import NegotiationCard from '../../components/chat/NegotiationCard';
+import lavenderHoodie from '../../assets/lavender_hoodie.png';
+import techwearJacket from '../../assets/techwear_jacket.png';
+import knitSweater from '../../assets/knit_sweater.png';
+import activewearShirt from '../../assets/activewear_shirt.png';
 
 const botWelcome = "👋 Welcome to QUICK_STYLE Concierge. I am your personal AI stylist. Need a swift wardrobe change for an unexpected event, spilled coffee, or a night out? Describe your fit requirements below.";
 
@@ -97,11 +101,11 @@ export default function Chat() {
 
   const mapImage = (name: string): string => {
     const n = name.toLowerCase();
-    if (n.includes("hoodie")) return "/src/assets/lavender_hoodie.png";
-    if (n.includes("jacket") || n.includes("blazer") || n.includes("tote") || n.includes("bag")) return "/src/assets/techwear_jacket.png";
-    if (n.includes("sweater") || n.includes("pants") || n.includes("joggers") || n.includes("trousers") || n.includes("shoes") || n.includes("sneakers") || n.includes("loafers") || n.includes("boots")) return "/src/assets/knit_sweater.png";
-    if (n.includes("tee") || n.includes("shirt") || n.includes("shorts")) return "/src/assets/activewear_shirt.png";
-    return "/src/assets/lavender_hoodie.png";
+    if (n.includes("hoodie")) return lavenderHoodie;
+    if (n.includes("jacket") || n.includes("blazer") || n.includes("tote") || n.includes("bag")) return techwearJacket;
+    if (n.includes("sweater") || n.includes("pants") || n.includes("joggers") || n.includes("trousers") || n.includes("shoes") || n.includes("sneakers") || n.includes("loafers") || n.includes("boots")) return knitSweater;
+    if (n.includes("tee") || n.includes("shirt") || n.includes("shorts")) return activewearShirt;
+    return lavenderHoodie;
   };
 
   const handleSelectAndAddToCart = (recProduct: any, size: Size) => {
