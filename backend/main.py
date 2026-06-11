@@ -8,7 +8,9 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+import os
 
 from app.db.connection import connect_to_mongo, close_mongo_connection
 from app.db.indexes import create_indexes
@@ -86,14 +88,28 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="QUICK_STYLE API",
     description=(
-        "Hyperlocal Fashion Platform â€” Zero-inventory boutique delivery "
+        "Hyperlocal Fashion Platform — Zero-inventory boutique delivery "
         "with AI fit calibration, WebSocket live tracking, and 12-min delivery."
     ),
-    version="1.0.0",
+    version="1.0.1-test-deploy-2",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     lifespan=lifespan,
 )
+
+# Resolve paths for uploads and generated static dirs
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, ".."))
+uploads_dir = os.path.join(project_root, "frontend", "public", "uploads")
+generated_dir = os.path.join(project_root, "frontend", "public", "generated")
+
+# Ensure directories exist
+os.makedirs(uploads_dir, exist_ok=True)
+os.makedirs(generated_dir, exist_ok=True)
+
+# Mount static files
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+app.mount("/generated", StaticFiles(directory=generated_dir), name="generated")
 
 # â”€â”€ CORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.add_middleware(
