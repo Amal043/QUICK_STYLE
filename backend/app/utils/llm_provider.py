@@ -9,7 +9,7 @@ from groq import Groq as GroqClient
 from google.generativeai import GenerativeModel
 
 # Configuration
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 GROQ_MODEL = "llama-3.3-70b-versatile"
 HF_TEXT_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
 HF_VISION_MODEL = "llava-hf/llava-1.5-7b-hf"
